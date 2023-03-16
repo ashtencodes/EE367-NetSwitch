@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,7 +8,6 @@
 #include "packet.h"
 #include "net.h"
 #include "host.h"
-
 
 void packet_send(struct net_port *port, struct packet *p)
 {
