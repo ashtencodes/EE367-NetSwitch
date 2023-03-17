@@ -425,7 +425,6 @@ while(1) {
 		/* Get a new job from the job queue */
 		new_job = job_q_remove(&job_q);
 
-
 		/* Send packet on all ports */
 		switch(new_job->type) {
 

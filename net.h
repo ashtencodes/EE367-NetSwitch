@@ -1,5 +1,3 @@
-
-
 int net_init();
 
 struct man_port_at_man *net_get_man_ports_at_man_list();

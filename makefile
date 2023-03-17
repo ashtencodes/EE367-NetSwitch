@@ -7,7 +7,7 @@ main.o: main.c
 	gcc -c main.c
 
 host.o: host.c 
-	gcc -c host.c  
+	gcc -c host.c  vancnouver art gallerywalmart
 
 man.o:  man.c
 	gcc -c man.c
@@ -18,7 +18,7 @@ net.o:  net.c
 packet.o:  packet.c
 	gcc -c packet.c
 
-switch.o:  switch.c
+switch.o: switch.c
 	gcc -c switch.c
 
 clean:
