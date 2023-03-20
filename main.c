@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -46,8 +47,8 @@ for (p_node = node_list; p_node != NULL; p_node = p_node->next) {
 		if (p_node->type == HOST) {  /* Execute host routine */
 			host_main(p_node->id);
 		}
-		else if (p_node->type = SWITCH) {
-			//switchMain(p_node->id);
+		else if (p_node->type == SWITCH) {
+			switch_main(p_node->id);
 		}
 		return;
 	}  
