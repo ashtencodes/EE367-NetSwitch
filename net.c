@@ -413,6 +413,7 @@ for (i=0; i<g_net_link_num; i++) {
 	}
 
 }
+}
 
 /*
  * Loads network configuration file and creates data structures
@@ -547,6 +548,7 @@ for (i=0; i<g_net_link_num; i++) {
 fclose(fp);
 return(1);
 }
+
 
 
 

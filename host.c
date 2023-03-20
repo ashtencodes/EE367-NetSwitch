@@ -406,6 +406,7 @@ while(1) {
 						= JOB_FILE_UPLOAD_RECV_END;
 					job_q_add(&job_q, new_job);
 					break;
+
 				default:
 					free(in_packet);
 					free(new_job);
@@ -518,53 +519,70 @@ while(1) {
 					}
 					new_packet->length = i;
 
-					/* 
-					 * Create a job to send the packet
-					 * and put it in the job queue
-					 */
-					new_job2 = (struct host_job *)
-						malloc(sizeof(struct host_job));
-					new_job2->type = JOB_SEND_PKT_ALL_PORTS;
-					new_job2->packet = new_packet;
-					job_q_add(&job_q, new_job2);
+					int continueFlag = 1;
 
-					/* 
-					 * Create the second packet which
-					 * has the file contents
-					 */
-					new_packet = (struct packet *) 
-						malloc(sizeof(struct packet));
-					new_packet->dst 
-						= new_job->file_upload_dst;
-					new_packet->src = (char) host_id;
-					new_packet->type = PKT_FILE_UPLOAD_END;
+					while(continueFlag){
 
+						memset( string, '\0', sizeof(char)*PKT_PAYLOAD_MAX+1 );
 
-					n = fread(string,sizeof(char),
-						PKT_PAYLOAD_MAX, fp);
-					fclose(fp);
-					string[n] = '\0';
+						printf("Sending Packet\n");
 
-					for (i=0; i<n; i++) {
-						new_packet->payload[i] 
-							= string[i];
+						/* 
+						* Create a job to send the packet
+						* and put it in the job queue
+						*/
+						new_job2 = (struct host_job *) malloc(sizeof(struct host_job));
+						new_job2->type = JOB_SEND_PKT_ALL_PORTS;
+						new_job2->packet = new_packet;
+						job_q_add(&job_q, new_job2);
+
+						/* 
+						* Create the second packet which
+						* has the file contents
+						*/
+					
+						new_packet = (struct packet *) malloc(sizeof(struct packet));
+						new_packet->dst 
+							= new_job->file_upload_dst;
+						new_packet->src = (char) host_id;
+						new_packet->type = PKT_FILE_UPLOAD_END;
+
+						n = fread(string,sizeof(char),
+						PKT_PAYLOAD_MAX, fp);	
+						string[n] = '\0';
+
+						if(n < PKT_PAYLOAD_MAX){
+							printf("s = %s\n",string);
+							printf("n = %d\n",n);
+							continueFlag = 0;
+						} else {
+							printf("s = %s\n",string);
+							printf("n = %d\n",n);
+							continueFlag = 1;
+						}
+
+						for (i=0; i<n; i++) {
+							new_packet->payload[i] 
+								= string[i];
+						}
+
+						new_packet->length = n;
+
+						/*
+						* Create a job to send the packet
+						* and put the job in the job queue
+						*/
+
+						new_job2 = (struct host_job *)
+							malloc(sizeof(struct host_job));
+						new_job2->type 
+							= JOB_SEND_PKT_ALL_PORTS;
+						new_job2->packet = new_packet;
+						job_q_add(&job_q, new_job2);
+
 					}
-
-					new_packet->length = n;
-
-					/*
-					 * Create a job to send the packet
-					 * and put the job in the job queue
-					 */
-
-					new_job2 = (struct host_job *)
-						malloc(sizeof(struct host_job));
-					new_job2->type 
-						= JOB_SEND_PKT_ALL_PORTS;
-					new_job2->packet = new_packet;
-					job_q_add(&job_q, new_job2);
-
-					free(new_job);
+				fclose(fp);
+				free(new_job);
 				}
 				else {  
 					/* Didn't open file */

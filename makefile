@@ -7,7 +7,7 @@ main.o: main.c
 	gcc -c main.c
 
 host.o: host.c 
-	gcc -c host.c  vancnouver art gallerywalmart
+	gcc -c host.c
 
 man.o:  man.c
 	gcc -c man.c
