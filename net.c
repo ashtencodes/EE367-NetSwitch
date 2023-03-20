@@ -282,6 +282,7 @@ create_port_list();
  * as a linked list
  */
 create_man_ports(&g_man_man_port_list, &g_man_host_port_list);
+return 0;
 }
 
 /*
@@ -413,6 +414,7 @@ for (i=0; i<g_net_link_num; i++) {
 	}
 
 }
+}
 
 /*
  * Loads network configuration file and creates data structures
@@ -459,12 +461,12 @@ else {
 	for (i=0; i<node_num; i++) { 
 		fscanf(fp, " %c ", &node_type);
 
-		if (node_type = 'H') {
+		if (node_type == 'H') {
 			fscanf(fp, " %d ", &node_id);
 			g_net_node[i].type = HOST;
 			g_net_node[i].id = node_id;
 		}
-		else if (node_type = 'S') {
+		else if (node_type == 'S') {
 			fscanf(fp, " %d ", &node_id);
 			g_net_node[i].type = SWITCH;
 			g_net_node[i].id = node_id;

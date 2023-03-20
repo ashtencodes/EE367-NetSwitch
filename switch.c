@@ -45,6 +45,7 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
             return i;
         }
     }
+	return -1;
 }
 
 void switch_main(int switch_id)
