@@ -425,18 +425,30 @@ for (i=0; i<g_net_link_num; i++) {
 		struct sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
-		addr.sin_port = htons(port);
+		//addr.sin_port = htons(port);
 		addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 		//Bind socket
+		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+		if (bind_result < 0) {
+			perror("Error binding socket");
+			exit(EXIT_FAILURE);
+		}
 
 		//Listen for connections
+		int listen_result = listen(sockfd, 10);
+		if (listen_result < 0) {
+			perror("Error listening on socket");
+			exit(EXIT_FAILURE);
+		}
 
 		//Accept connections
+		int accept_result = accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 
 		//Send and receive data
-
 		//Close the socket
+
+		return sockfd;
 	}
 
 }
