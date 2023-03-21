@@ -411,6 +411,17 @@ for (i=0; i<g_net_link_num; i++) {
 
 	}
 	else if (g_net_link[i].type == SOCKET) {
+		//Create socket
+
+		//Bind socket
+
+		//Listen for connections
+
+		//Accept connections
+
+		//Send and receive data
+
+		//Close the socket
 	}
 
 }
