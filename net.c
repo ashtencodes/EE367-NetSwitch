@@ -21,6 +21,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "main.h"
 #include "man.h"
 #include "host.h"
@@ -412,6 +416,17 @@ for (i=0; i<g_net_link_num; i++) {
 	}
 	else if (g_net_link[i].type == SOCKET) {
 		//Create socket
+		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if(sockfd < 0) {
+			perror("Error creating socket"); 
+			exit(EXIT_FAILURE);
+		}
+
+		struct sockaddr_in addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(port);
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 		//Bind socket
 
