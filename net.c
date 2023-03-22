@@ -415,25 +415,32 @@ for (i=0; i<g_net_link_num; i++) {
 
 	}
 	else if (g_net_link[i].type == SOCKET) {
+		//Initialize port
+		p0 = (struct net_port *) malloc(sizeof(struct net_port));
+		p1 = (struct net_port *) malloc(sizeof(struct net_port));
+
 		//Create socket
 		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if(sockfd < 0) {
 			perror("Error creating socket"); 
 			exit(EXIT_FAILURE);
 		}
+		printf("Server socket created\n"); 
 
+		//Provide socket with information
 		struct sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		//addr.sin_port = htons(port);
-		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+		addr.sin_family = AF_INET; //Protocol for IPV4
+		addr.sin_port = htons(p0); //Need to assign port
+		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface
 
-		//Bind socket
+		//Bind socket to the port information listed above
 		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
 		if (bind_result < 0) {
 			perror("Error binding socket");
 			exit(EXIT_FAILURE);
 		}
+		printf("Bind successful");
 
 		//Listen for connections
 		int listen_result = listen(sockfd, 10);
@@ -441,12 +448,14 @@ for (i=0; i<g_net_link_num; i++) {
 			perror("Error listening on socket");
 			exit(EXIT_FAILURE);
 		}
+		printf("Server listening");
 
 		//Accept connections
-		int accept_result = accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-
-		//Send and receive data
-		//Close the socket
+		int accept_result = accept(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+		if (accept_result < 0) {
+			perror("Error accepting on socket");
+			exit(EXIT_FAILURE);
+		}
 
 		return sockfd;
 	}
