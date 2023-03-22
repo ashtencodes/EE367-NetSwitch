@@ -419,8 +419,11 @@ for (i=0; i<g_net_link_num; i++) {
 		p0 = (struct net_port *) malloc(sizeof(struct net_port));
 		p1 = (struct net_port *) malloc(sizeof(struct net_port));
 
+		int sockfd, client_sock, clilen, pid;
+		struct sockaddr_in addr, cli_addr;
+
 		//Create socket
-		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if(sockfd < 0) {
 			perror("Error creating socket"); 
 			exit(EXIT_FAILURE);
@@ -428,11 +431,10 @@ for (i=0; i<g_net_link_num; i++) {
 		printf("Server socket created\n"); 
 
 		//Provide socket with information
-		struct sockaddr_in addr;
 		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET; //Protocol for IPV4
-		addr.sin_port = htons(p0); //Need to assign port
-		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface
+		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
+		addr.sin_port = htons(p0); //Assign port
+		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP instead
 
 		//Bind socket to the port information listed above
 		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
@@ -444,20 +446,39 @@ for (i=0; i<g_net_link_num; i++) {
 
 		//Listen for connections
 		int listen_result = listen(sockfd, 10);
-		if (listen_result < 0) {
-			perror("Error listening on socket");
-			exit(EXIT_FAILURE);
-		}
 		printf("Server listening");
 
-		//Accept connections
-		int accept_result = accept(sockfd, (struct sockaddr *)&addr, sizeof(addr));
-		if (accept_result < 0) {
-			perror("Error accepting on socket");
-			exit(EXIT_FAILURE);
+		//Accept connection from that client
+		while(1) {
+			clilen = sizeof(cli_addr);
+			client_sock = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+			if (client_sock < 0) {
+				perror("ERROR on accept");
+				exit(1);
+			}
+
+			printf("Accepted connection from %s:%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+
+			// fork a new process to handle the client
+			pid = fork();
+			if (pid < 0) {
+				perror("ERROR on fork");
+				exit(1);
+			}
+
+			if (pid == 0) {
+				// child process
+				close(sockfd);
+				handle_client(client_sock);
+				exit(0);
+			} else {
+				// parent process
+				close(client_sock);
+			}
 		}
 
-		return sockfd;
+		//Close socket
+		close(sockfd);
 	}
 
 }
