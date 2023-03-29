@@ -415,6 +415,8 @@ for (i=0; i<g_net_link_num; i++) {
 
 	}
 	else if (g_net_link[i].type == SOCKET) {
+		// *** Unsure about intializing this port information. 
+		// *** When finished, we need to plug it into the htons() line below ***
 		//Initialize port
 		p0 = (struct net_port *) malloc(sizeof(struct net_port));
 		p1 = (struct net_port *) malloc(sizeof(struct net_port));
@@ -433,8 +435,8 @@ for (i=0; i<g_net_link_num; i++) {
 		//Provide socket with information
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
-		addr.sin_port = htons(p0); //Assign port
-		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP instead
+		addr.sin_port = htons(port); // *** Assign port 
+		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
 
 		//Bind socket to the port information listed above
 		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
@@ -459,22 +461,24 @@ for (i=0; i<g_net_link_num; i++) {
 
 			printf("Accepted connection from %s:%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
 
-			// fork a new process to handle the client
-			pid = fork();
-			if (pid < 0) {
-				perror("ERROR on fork");
-				exit(1);
-			}
+			// *** I don't know if we need to use the code below
 
-			if (pid == 0) {
-				// child process
-				close(sockfd);
-				handle_client(client_sock);
-				exit(0);
-			} else {
-				// parent process
-				close(client_sock);
-			}
+			// // fork a new process to handle the client
+			// pid = fork();
+			// if (pid < 0) {
+			// 	perror("ERROR on fork");
+			// 	exit(1);
+			// }
+
+			// if (pid == 0) {
+			// 	// child process
+			// 	close(sockfd);
+			// 	handle_client(client_sock);
+			// 	exit(0);
+			// } else {
+			// 	// parent process
+			// 	close(client_sock);
+			// }
 		}
 
 		//Close socket
