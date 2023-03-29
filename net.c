@@ -43,10 +43,18 @@ enum bool {FALSE, TRUE};
  * network configuration file is loaded.
  */
 
+struct socket{
+	char *link0;
+	char *link1;
+	int port0;
+	int port1;
+};
+
 struct net_link {
 	enum NetLinkType type;
 	int pipe_node0;
 	int pipe_node1;
+	struct socket socket_node1;
 };
 
 
@@ -415,11 +423,24 @@ for (i=0; i<g_net_link_num; i++) {
 
 	}
 	else if (g_net_link[i].type == SOCKET) {
-		// *** Unsure about intializing this port information. 
-		// *** When finished, we need to plug it into the htons() line below ***
+		
 		//Initialize port
-		p0 = (struct net_port *) malloc(sizeof(struct net_port));
-		p1 = (struct net_port *) malloc(sizeof(struct net_port));
+		// node0 = g_net_link[i].pipe_node0;
+		// node1 = g_net_link[i].socket_node1;
+
+		// p0 = (struct net_port *) malloc(sizeof(struct net_port));
+		// p0->type = g_net_link[i].type;
+		// p0->pipe_host_id = node0;
+
+
+		// pipe(fd01);  /* Create a pipe from local machine to our socket*/
+		// 	/* Make the pipe nonblocking at both ends */
+   		// fcntl(fd01[PIPE_WRITE], F_SETFL, 
+		// 		fcntl(fd01[PIPE_WRITE], F_GETFL) | O_NONBLOCK);
+   		// fcntl(fd01[PIPE_READ], F_SETFL, 
+		// 		fcntl(fd01[PIPE_READ], F_GETFL) | O_NONBLOCK);
+		// p0->pipe_send_fd = fd01[PIPE_WRITE]; 
+		// p1->pipe_recv_fd = fd01[PIPE_READ]; 
 
 		int sockfd, client_sock, clilen, pid;
 		struct sockaddr_in addr, cli_addr;
@@ -430,55 +451,46 @@ for (i=0; i<g_net_link_num; i++) {
 			perror("Error creating socket"); 
 			exit(EXIT_FAILURE);
 		}
+		
 		printf("Server socket created\n"); 
 
 		//Provide socket with information
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
-		addr.sin_port = htons(port); // *** Assign port 
+		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // *** Assign port 
 		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
 
 		//Bind socket to the port information listed above
-		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
-		if (bind_result < 0) {
-			perror("Error binding socket");
-			exit(EXIT_FAILURE);
-		}
-		printf("Bind successful");
+		// int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+		// if (bind_result < 0) {
+		// 	perror("Error binding socket");
+		// 	exit(EXIT_FAILURE);
+		// }
+		// printf("Bind successful");
 
-		//Listen for connections
-		int listen_result = listen(sockfd, 10);
-		printf("Server listening");
+		// //Listen for connections
+		// int listen_result = listen(sockfd, 10);
+		// printf("Server listening");
 
 		//Accept connection from that client
-		while(1) {
-			clilen = sizeof(cli_addr);
-			client_sock = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-			if (client_sock < 0) {
-				perror("ERROR on accept");
-				exit(1);
-			}
+		// while(1) {
+		// 	clilen = sizeof(cli_addr);
+		// 	client_sock = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+		// 	if (client_sock < 0) {
+		// 		perror("ERROR on accept");
+		// 		exit(1);
+		// 	}
 
-			printf("Accepted connection from %s:%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+		// 	printf("Accepted connection from %s:%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+			 
+		// }
 
-			// *** I don't know if we need to use the code below
-
-			// // fork a new process to handle the client
-			// pid = fork();
-			// if (pid < 0) {
-			// 	perror("ERROR on fork");
-			// 	exit(1);
-			// }
-
-			// if (pid == 0) {
-			// 	// child process
-			// 	close(sockfd);
-			// 	handle_client(client_sock);
-			// 	exit(0);
-			// } else {
-			// 	// parent process
-			// 	close(client_sock);
-			// }
+		//If we're the client, connect to the server
+		if(connect(sockfd, &addr, clilen) == 0){
+			printf("Socket creation failed\n");
+			exit(EXIT_FAILURE);
+		} else {
+			printf("Socket creation succeeded\n");
 		}
 
 		//Close socket
@@ -566,6 +578,9 @@ else {
 int link_num;
 char link_type;
 int node0, node1;
+int port0, port1;
+char *address0;
+char address1;
 
 fscanf(fp, " %d ", &link_num);
 printf("Number of links = %d\n", link_num);
@@ -581,10 +596,24 @@ else {
 	for (i=0; i<link_num; i++) {
 		fscanf(fp, " %c ", &link_type);
 		if (link_type == 'P') {
+			printf("detected a port\n");
 			fscanf(fp," %d %d ", &node0, &node1);
 			g_net_link[i].type = PIPE;
 			g_net_link[i].pipe_node0 = node0;
 			g_net_link[i].pipe_node1 = node1;
+		}
+		else if (link_type == 'S'){
+			printf("detected a socket\n");
+			fscanf(fp," %d %s %d %s %d ", &node0, &address0, &port0, &address1, &port1);
+			g_net_link[i].type = SOCKET;
+			g_net_link[i].pipe_node0 = node0;
+			g_net_link[i].socket_node1.link0 = address0;
+			g_net_link[i].socket_node1.port0 = port0;
+			g_net_link[i].socket_node1.link1 = address1;
+			g_net_link[i].socket_node1.port1 = port1;
+
+			// Verify everything is being read in correctly
+			printf("socket link: %d %s %d %s %d \n", g_net_link[i].pipe_node0, g_net_link[i].socket_node1.link0, g_net_link[i].socket_node1.port0, g_net_link[i].socket_node1.link1, g_net_link[i].socket_node1.port1);
 		}
 		else {
 			printf("   net.c: Unidentified link type\n");
