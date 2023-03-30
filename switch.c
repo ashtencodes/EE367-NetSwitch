@@ -143,7 +143,7 @@ while(1) {
 		{
             for (i=0; i<node_port_num; i++)
 			{
-				printf("%d\n",node_port[i]->pipe_send_fd);
+				//printf("%d\n",node_port[i]->pipe_send_fd);
 				if (i != new_job->in_port_index) {
 					packet_send(node_port[i], new_job->packet);
 				}

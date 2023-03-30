@@ -142,7 +142,7 @@ struct net_node *net_get_node_list();
  */
 struct net_port *net_get_port_list(int host_id)
 {
-printf("val: host_id = %d\n", host_id);
+//printf("val: host_id = %d\n", host_id);
 struct net_port **p;
 struct net_port *r;
 struct net_port *t;
@@ -151,6 +151,7 @@ r = NULL;
 p = &g_port_list;
 
 while (*p != NULL) {
+	
 	if ((*p)->pipe_host_id == host_id) {
 		t = *p;	
 		*p = (*p)->next;
@@ -161,7 +162,7 @@ while (*p != NULL) {
 		p = &((*p)->next);
 	}
 }
-
+//printf("r: %d\n", r->pipe_host_id);
 return r;
 }
 
@@ -424,6 +425,8 @@ for (i=0; i<g_net_link_num; i++) {
 	}
 	else if (g_net_link[i].type == SOCKET) {
 		
+		node0 = g_net_link[i].pipe_node0;
+
 		p0 = (struct net_port *) malloc(sizeof(struct net_port));
 		p0->type = g_net_link[i].type;
 		p0->pipe_host_id = node0;
@@ -450,8 +453,8 @@ for (i=0; i<g_net_link_num; i++) {
 			exit(EXIT_FAILURE);
 		}
 
-		p0->pipe_send_fd = 69696969;
-		p0->pipe_recv_fd = 69696969;
+		p0->pipe_send_fd = sockfd;
+		p0->pipe_recv_fd = sockfd;
 
 		
 		p0->next = g_port_list;
