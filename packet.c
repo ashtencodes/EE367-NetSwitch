@@ -16,10 +16,10 @@ void packet_send(struct net_port *port, struct packet *p)
 
 char msg[PAYLOAD_MAX+4];
 int i;
-//printf("Port type: %d\n", port->type);
+printf("Port type: %d\n", port->type);
 
 if (port->type == PIPE) {
-	//printf("sending to pipe\n");
+	printf("sending to pipe\n");
 	msg[0] = (char) p->src; 
 	msg[1] = (char) p->dst;
 	msg[2] = (char) p->type;
@@ -67,7 +67,7 @@ if (port->type == PIPE) {
 
 if (port->type == SOCKET) {
 	n = recv(port->pipe_recv_fd, msg, strlen(msg), 0);
-	printf("reading from socket\n");
+	//printf("reading from socket\n");
 	if (n>0) {
 		p->src = (char) msg[0];
 		p->dst = (char) msg[1];

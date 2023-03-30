@@ -368,7 +368,6 @@ for (i=0; i<g_net_node_num; i++) {
 	p = (struct net_node *) malloc(sizeof(struct net_node));
 	p->id = i;
 	p->type = g_net_node[i].type;
-	//printf("g_create_node_list type = %d\n",p->type);
 	p->next = g_node_list;
 	g_node_list = p;
 }
@@ -456,9 +455,12 @@ for (i=0; i<g_net_link_num; i++) {
 			exit(EXIT_FAILURE);
 		}
 
+
+		int flags = fcntl(sockfd, F_GETFL);
+		fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+
 		p0->pipe_send_fd = sockfd;
 		p0->pipe_recv_fd = sockfd;
-
 		
 		p0->next = g_port_list;
 		g_port_list = p0;
@@ -527,11 +529,6 @@ else {
 			printf(" net.c: Unidentified Node Type\n");
 		}
 
-		if (i != node_id) {
-			printf(" net.c: Incorrect node id\n");
-			fclose(fp);
-			return(0);
-		}
 	}
 }
 	/* 

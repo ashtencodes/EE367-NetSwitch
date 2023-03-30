@@ -103,10 +103,10 @@ for (k = 0; k < node_port_num; k++) {
 /* Initialize the job queue */
 job_q_init(&job_q);
 
-while(1) {
-	
+while(1) {	
 	
 	for (k = 0; k < node_port_num; k++) { /* Scan all ports */
+
 
 		in_packet = (struct packet *) malloc(sizeof(struct packet));
 		n = packet_recv(node_port[k], in_packet);
@@ -145,7 +145,6 @@ while(1) {
 		{
             		for (i=0; i<node_port_num; i++)
 			{
-				//printf("Sending to %d\n",i);
 				if (i != new_job->in_port_index) {
 					packet_send(node_port[i], new_job->packet);
 				}
