@@ -431,7 +431,7 @@ for (i=0; i<g_net_link_num; i++) {
 		p0->type = g_net_link[i].type;
 		p0->pipe_host_id = node0;
 
-		int sockfd, client_sock, clilen;
+		int sockfd, clientfd;
 		struct sockaddr_in addr, cli_addr;
 
       sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -444,7 +444,7 @@ for (i=0; i<g_net_link_num; i++) {
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
 		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // *** Assign port
-      //printf("address = %s\n",g_net_link[i].socket_node1.link0);
+      printf("port = %d\n",g_net_link[i].socket_node1.port0);
 		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
 
 		//Bind socket to the port information listed above
@@ -452,15 +452,31 @@ for (i=0; i<g_net_link_num; i++) {
 		if (bind_result < 0) {
 			perror("Error binding socket");
 			exit(EXIT_FAILURE);
-		}
+		} else {
+         printf("Server successfully binded\n");
+      }
 
 		//Listen for connections
-		int listen_result = listen(sockfd, 1);
-      printf("listen result = %d\n",listen_result);
+		if((listen(sockfd, 1)) != 0){
+            printf("Listen failed...\n");
+            exit(0);
+      } else {
+            printf("Server listening...\n");
+      }
 
-      p0->pipe_send_fd = sockfd;
-		p0->pipe_recv_fd = sockfd;
+      int len = sizeof(cli_addr);
 
+      clientfd = accept(sockfd, (struct sockaddr*)&cli_addr, &len);
+
+      if(clientfd < 0){
+         printf("Server accept failed...\n");
+         exit(0);
+      } else {
+         printf("Server accepted the client!\n");
+      }
+
+      p0->pipe_send_fd = clientfd;
+		p0->pipe_recv_fd = clientfd;
 		
 		p0->next = g_port_list;
 		g_port_list = p0;

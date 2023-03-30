@@ -51,7 +51,7 @@ int n;
 int i;
 	
 if (port->type == PIPE) {
-	n = read(port->pipe_recv_fd, msg, PAYLOAD_MAX+4);
+	n = read(port->pipe_recv_fd, msg, strlen(msg));
 	if (n>0) {
 		p->src = (char) msg[0];
 		p->dst = (char) msg[1];
@@ -66,6 +66,7 @@ if (port->type == PIPE) {
 if (port->type == SOCKET) {
 	n = recv(port->pipe_recv_fd, msg, strlen(msg), 0);
 	if (n>0) {
+      printf("received\n");
 		p->src = (char) msg[0];
 		p->dst = (char) msg[1];
 		p->type = (char) msg[2];

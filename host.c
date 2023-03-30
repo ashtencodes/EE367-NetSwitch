@@ -280,6 +280,7 @@ node_port = (struct net_port **)
 	/* Load ports into the array */
 p = node_port_list;
 for (k = 0; k < node_port_num; k++) {
+   //printf("type = %d\n",node_port[k]->type);
 	node_port[k] = p;
 	p = p->next;
 }	
@@ -288,8 +289,7 @@ for (k = 0; k < node_port_num; k++) {
 job_q_init(&job_q);
 
 while(1) {
-	/* Execute command from manager, if any */
-
+	/* Execute command from manager, if any *
 		/* Get command from manager */
 	n = get_man_command(man_port, man_msg, &man_cmd);
 
