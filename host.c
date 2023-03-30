@@ -356,7 +356,7 @@ while(1) {
 	/*
 	 * Get packets from incoming links and translate to jobs
   	 * Put jobs in job queue
- 	 */
+ 	 */ 
 
 	for (k = 0; k < node_port_num; k++) { /* Scan all ports */
 

@@ -40,12 +40,12 @@ enum bool {FALSE, TRUE};
 
 /* 
  * Struct used to store a link. It is used when the 
- * network configuration file is loaded.
+ * netwok configuration file is loaded.
  */
 
 struct socket{
-	char *link0;
-	char *link1;
+	char link0[256];
+	char link1[256];
 	int port0;
 	int port1;
 };
@@ -434,26 +434,31 @@ for (i=0; i<g_net_link_num; i++) {
 		int sockfd, client_sock, clilen;
 		struct sockaddr_in addr, cli_addr;
 
-		//Create socket
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
+      sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if(sockfd < 0) {
-			perror("Error creating socket"); 
+			perror("Error creating socket");
 			exit(EXIT_FAILURE);
 		}
 
 		//Provide socket with information
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
-		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // Assign port 
+		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // *** Assign port
+      //printf("address = %s\n",g_net_link[i].socket_node1.link0);
 		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
 
-		//If we're the client, connect to the server
-		if(connect(sockfd, &addr, clilen) == 0){
-			printf("Socket creation failed\n");
+		//Bind socket to the port information listed above
+		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
+		if (bind_result < 0) {
+			perror("Error binding socket");
 			exit(EXIT_FAILURE);
 		}
 
-		p0->pipe_send_fd = sockfd;
+		//Listen for connections
+		int listen_result = listen(sockfd, 1);
+      printf("listen result = %d\n",listen_result);
+
+      p0->pipe_send_fd = sockfd;
 		p0->pipe_recv_fd = sockfd;
 
 		
@@ -571,9 +576,9 @@ else {
 			fscanf(fp," %d %s %d %s %d ", &node0, &address0, &port0, &address1, &port1);
 			g_net_link[i].type = SOCKET;
 			g_net_link[i].pipe_node0 = node0;
-			g_net_link[i].socket_node1.link0 = address0;
+			strcpy(g_net_link[i].socket_node1.link0,address0);
 			g_net_link[i].socket_node1.port0 = port0;
-			g_net_link[i].socket_node1.link1 = address1;
+			strcpy(g_net_link[i].socket_node1.link1,address1);
 
 			// Verify everything is being read in correctly
 			//printf("socket link: %d %s %d %s %d \n", g_net_link[i].pipe_node0, g_net_link[i].socket_node1.link0, g_net_link[i].socket_node1.port0, g_net_link[i].socket_node1.link1, g_net_link[i].socket_node1.port1);
