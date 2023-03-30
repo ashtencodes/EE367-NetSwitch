@@ -153,12 +153,14 @@ p = &g_port_list;
 while (*p != NULL) {
 	
 	if ((*p)->pipe_host_id == host_id) {
+		printf("p->pipe_host_id: %d", (*p)->pipe_host_id);
 		t = *p;	
 		*p = (*p)->next;
 		t->next = r;
 		r = t;
 	}
 	else {
+		printf("p->pipe_host_id: %d", (*p)->pipe_host_id);
 		p = &((*p)->next);
 	}
 }
