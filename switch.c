@@ -93,6 +93,7 @@ node_port = (struct net_port **)
 
 	/* Load ports into the array */
 p = node_port_list;
+
 for (k = 0; k < node_port_num; k++) {
 	node_port[k] = p;
 	p = p->next;
@@ -102,7 +103,8 @@ for (k = 0; k < node_port_num; k++) {
 job_q_init(&job_q);
 
 while(1) {
-
+	
+	
 	for (k = 0; k < node_port_num; k++) { /* Scan all ports */
 
 		in_packet = (struct packet *) malloc(sizeof(struct packet));
@@ -140,8 +142,9 @@ while(1) {
 
 		if (destination_port == -1)
 		{
-            for (i=0; i<node_port_num; i++)
+            		for (i=0; i<node_port_num; i++)
 			{
+				printf("%d\n",node_port[i]->type);
 				if (i != new_job->in_port_index) {
 					packet_send(node_port[i], new_job->packet);
 				}
