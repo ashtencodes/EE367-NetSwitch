@@ -96,6 +96,7 @@ p = node_port_list;
 
 for (k = 0; k < node_port_num; k++) {
 	node_port[k] = p;
+	//printf("%d\n",node_port[k]->type);
 	p = p->next;
 }
 
@@ -138,13 +139,13 @@ while(1) {
 			assign_entry_in_table(MAC_Address_Table, new_job->packet->src, new_job->in_port_index);
 		}
 
-        int destination_port = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->dst);
+        	int destination_port = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->dst);
 
 		if (destination_port == -1)
 		{
             		for (i=0; i<node_port_num; i++)
 			{
-				printf("%d\n",node_port[i]->type);
+				//printf("Sending to %d\n",i);
 				if (i != new_job->in_port_index) {
 					packet_send(node_port[i], new_job->packet);
 				}

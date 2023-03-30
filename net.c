@@ -133,8 +133,6 @@ struct net_port *net_get_port_list(int host_id);
  */
 struct net_node *net_get_node_list();
 
-
-
 /*
  * Remove all the ports for the host from linked lisst g_port_list.
  * and create another linked list.  Return the pointer to this
@@ -151,16 +149,18 @@ r = NULL;
 p = &g_port_list;
 
 while (*p != NULL) {
+
+	//printf("Port list type: %d\n",(*p)->type);
 	
 	if ((*p)->pipe_host_id == host_id) {
-		printf("p->pipe_host_id: %d", (*p)->pipe_host_id);
+		//printf("p->pipe_host_id: %d", (*p)->pipe_host_id);
 		t = *p;	
 		*p = (*p)->next;
 		t->next = r;
 		r = t;
 	}
 	else {
-		printf("p->pipe_host_id: %d", (*p)->pipe_host_id);
+		//printf("p->pipe_host_id: %d", (*p)->pipe_host_id);
 		p = &((*p)->next);
 	}
 }
@@ -368,6 +368,7 @@ for (i=0; i<g_net_node_num; i++) {
 	p = (struct net_node *) malloc(sizeof(struct net_node));
 	p->id = i;
 	p->type = g_net_node[i].type;
+	//printf("g_create_node_list type = %d\n",p->type);
 	p->next = g_node_list;
 	g_node_list = p;
 }
@@ -607,7 +608,7 @@ for (i=0; i<g_net_link_num; i++) {
 				g_net_link[i].pipe_node1);
 	}
 	else if (g_net_link[i].type == SOCKET) {
-		printf("   Link (Switch, %d) SOCKET\n", 
+		printf("   Link (%d, Switch) SOCKET\n", 
 				g_net_link[i].pipe_node0);
 	}
 }

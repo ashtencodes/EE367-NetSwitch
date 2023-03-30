@@ -19,6 +19,7 @@ int i;
 //printf("Port type: %d\n", port->type);
 
 if (port->type == PIPE) {
+	//printf("sending to pipe\n");
 	msg[0] = (char) p->src; 
 	msg[1] = (char) p->dst;
 	msg[2] = (char) p->type;
@@ -52,6 +53,7 @@ int i;
 	
 if (port->type == PIPE) {
 	n = read(port->pipe_recv_fd, msg, PAYLOAD_MAX+4);
+	//printf("reading from pipe\n");
 	if (n>0) {
 		p->src = (char) msg[0];
 		p->dst = (char) msg[1];
@@ -65,6 +67,7 @@ if (port->type == PIPE) {
 
 if (port->type == SOCKET) {
 	n = recv(port->pipe_recv_fd, msg, strlen(msg), 0);
+	printf("reading from socket\n");
 	if (n>0) {
 		p->src = (char) msg[0];
 		p->dst = (char) msg[1];
