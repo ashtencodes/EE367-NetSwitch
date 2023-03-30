@@ -445,10 +445,10 @@ for (i=0; i<g_net_link_num; i++) {
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
 		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // Assign port 
-		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
+		addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //Bind socket to any available network interface, can use IP in the htonl() instead
 
 		//If we're the client, connect to the server
-		if(connect(sockfd, &addr, clilen) == 0){
+		if(connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) != 0){
 			printf("Socket creation failed\n");
 			exit(EXIT_FAILURE);
 		}
@@ -567,7 +567,6 @@ else {
 			g_net_link[i].pipe_node1 = node1;
 		}
 		else if (link_type == 'S'){
-			printf("detected a socket\n");
 			fscanf(fp," %d %s %d %s %d ", &node0, &address0, &port0, &address1, &port1);
 			g_net_link[i].type = SOCKET;
 			g_net_link[i].pipe_node0 = node0;

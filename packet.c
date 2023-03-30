@@ -30,7 +30,7 @@ if (port->type == PIPE) {
 }
 
 if (port->type == SOCKET) {
-	//printf("sending to socket\n");
+	printf("sending to socket\n");
 	msg[0] = (char) p->src; 
 	msg[1] = (char) p->dst;
 	msg[2] = (char) p->type;

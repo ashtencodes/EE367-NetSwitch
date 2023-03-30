@@ -103,7 +103,8 @@ for (k = 0; k < node_port_num; k++) {
 job_q_init(&job_q);
 
 while(1) {
-
+	
+	
 	for (k = 0; k < node_port_num; k++) { /* Scan all ports */
 
 		in_packet = (struct packet *) malloc(sizeof(struct packet));
