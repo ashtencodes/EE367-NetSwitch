@@ -151,6 +151,8 @@ r = NULL;
 p = &g_port_list;
 
 while (*p != NULL) {
+
+   //printf("node port host id: %d\n",(*p)->pipe_host_id);
 	
 	if ((*p)->pipe_host_id == host_id) {
 		t = *p;	
@@ -364,7 +366,7 @@ int i;
 g_node_list = NULL;
 for (i=0; i<g_net_node_num; i++) {
 	p = (struct net_node *) malloc(sizeof(struct net_node));
-	p->id = i;
+	p->id = g_net_node[i].id;
 	p->type = g_net_node[i].type;
 	p->next = g_node_list;
 	g_node_list = p;
@@ -429,6 +431,7 @@ for (i=0; i<g_net_link_num; i++) {
 
 		p0 = (struct net_port *) malloc(sizeof(struct net_port));
 		p0->type = g_net_link[i].type;
+      //printf("host_id: %d\n",node0);
 		p0->pipe_host_id = node0;
 
 		int sockfd, clientfd;
@@ -474,6 +477,9 @@ for (i=0; i<g_net_link_num; i++) {
       } else {
          printf("Server accepted the client!\n");
       }
+
+      int flags = fcntl(clientfd, F_GETFL);
+      fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
 
       p0->pipe_send_fd = clientfd;
 		p0->pipe_recv_fd = clientfd;
@@ -534,6 +540,7 @@ else {
 		if (node_type == 'H') {
 			fscanf(fp, " %d ", &node_id);
 			g_net_node[i].type = HOST;
+         //printf("node i: %d\n",i);
 			g_net_node[i].id = node_id;
 		}
 		else if (node_type == 'S') {
@@ -545,11 +552,11 @@ else {
 			printf(" net.c: Unidentified Node Type\n");
 		}
 
-		if (i != node_id) {
-			printf(" net.c: Incorrect node id\n");
-			fclose(fp);
-			return(0);
-		}
+		//if (i != node_id) {
+		//	printf(" net.c: Incorrect node id\n");
+		//	fclose(fp);
+		//	return(0);
+		//}
 	}
 }
 	/* 

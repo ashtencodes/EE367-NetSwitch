@@ -259,13 +259,14 @@ file_buf_init(&f_buf_download);
  * Initialize pipes 
  * Get link port to the manager
  */
-
+//printf("host_id: %d\n",host_id);
 man_port = net_get_host_port(host_id);
 
 /*
  * Create an array node_port[ ] to store the network link ports
  * at the host.  The number of ports is node_port_num
  */
+
 node_port_list = net_get_port_list(host_id);
 
 	/*  Count the number of network link ports */
@@ -358,12 +359,15 @@ while(1) {
   	 * Put jobs in job queue
  	 */ 
 
+   //printf("node port num = %d\n",node_port_num);
+
 	for (k = 0; k < node_port_num; k++) { /* Scan all ports */
 
 		in_packet = (struct packet *) malloc(sizeof(struct packet));
 		n = packet_recv(node_port[k], in_packet);
 
-		if ((n > 0) && ((int) in_packet->dst == host_id)) {
+		if ((n >= 0) && ((int) in_packet->dst == host_id)) {
+         //printf("new job!\n");
 			new_job = (struct host_job *) 
 				malloc(sizeof(struct host_job));
 			new_job->in_port_index = k;
@@ -454,8 +458,10 @@ while(1) {
 			/* Create ping reply packet */
 			new_packet = (struct packet *) 
 				malloc(sizeof(struct packet));
+         //printf("new_job->packet->src: %d\n",new_job->packet->src);
 			new_packet->dst = new_job->packet->src;
 			new_packet->src = (char) host_id;
+         //printf("new_packet->src: %d\n",new_packet->src);
 			new_packet->type = PKT_PING_REPLY;
 			new_packet->length = 0;
 

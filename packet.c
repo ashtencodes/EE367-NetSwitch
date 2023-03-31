@@ -35,10 +35,10 @@ if (port->type == SOCKET) {
 	msg[1] = (char) p->dst;
 	msg[2] = (char) p->type;
 	msg[3] = (char) p->length;
-	for (i=0; i<p->length; i++) {
+   for (i = 0; i<p->length; i++){
 		msg[i+4] = p->payload[i];
 	}
-	send(port->pipe_send_fd, msg, strlen(msg), 0);
+	send(port->pipe_send_fd, msg, p->length+4, 0);
 }
 
 return;
@@ -64,11 +64,13 @@ if (port->type == PIPE) {
 }
 
 if (port->type == SOCKET) {
-	n = recv(port->pipe_recv_fd, msg, strlen(msg), 0);
-	if (n>0) {
-      printf("received\n");
+	n = recv(port->pipe_recv_fd, msg, p->length+4, 0);
+   //printf("monkey poop\n");
+	if (n>=0) {
+      //printf("received\n");
 		p->src = (char) msg[0];
 		p->dst = (char) msg[1];
+      //printf("p->dst: %d\n",p->dst);
 		p->type = (char) msg[2];
 		p->length = (int) msg[3];
 		for (i=0; i<p->length; i++) {
