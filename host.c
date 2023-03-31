@@ -364,6 +364,7 @@ while(1) {
 		n = packet_recv(node_port[k], in_packet);
 
 		if ((n > 0) && ((int) in_packet->dst == host_id)) {
+			//printf("New job!\n");
 			new_job = (struct host_job *) 
 				malloc(sizeof(struct host_job));
 			new_job->in_port_index = k;
