@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "main.h"
 #include "man.h"
@@ -446,15 +447,16 @@ for (i=0; i<g_net_link_num; i++) {
 		//Provide socket with information
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
-		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // Assign port 
+		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // Assign port
+		//printf("hostname = %s\n",g_net_link[i].socket_node1.link0i);
+		//struct hostent *lh = gethostbyname("wiliki.eng.hawaii.edu"); 
+		//printf("IP=%d\n",lh->h_addr);
 		addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //Bind socket to any available network interface, can use IP in the htonl() instead
 
 		//If we're the client, connect to the server
 		if(connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) != 0){
 			printf("Socket creation failed\n");
-			exit(EXIT_FAILURE);
 		}
-
 
 		int flags = fcntl(sockfd, F_GETFL);
 		fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);

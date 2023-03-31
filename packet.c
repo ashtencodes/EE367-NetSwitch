@@ -37,15 +37,14 @@ if (port->type == PIPE) {
 	
 
 if (port->type == SOCKET) {
-	//printf("sending to socket\n");
 	msg[0] = (char) p->src; 
 	msg[1] = (char) p->dst;
-	//printf("p->dst: %d\n",p->dst);
 	msg[2] = (char) p->type;
 	msg[3] = (char) p->length;
 	for (i=0; i<p->length; i++) {
 		msg[i+4] = p->payload[i];
 	}
+	//printf("Sending packet with p->length: %d\n",p->length);
 	if((send_num = send(port->pipe_send_fd, msg, p->length+4, 0)) < 0){
 		printf("Send failed\n");
 	} else {
@@ -77,7 +76,7 @@ if (port->type == PIPE) {
 }
 
 if (port->type == SOCKET) {
-	n = recv(port->pipe_recv_fd, msg, p->length+4, 0);
+	n = recv(port->pipe_recv_fd, msg, PAYLOAD_MAX+4, 0);
 	//printf("reading from socket\n");
 	if (n>0) {
 		//printf("Read a packet from the socket!\n");
