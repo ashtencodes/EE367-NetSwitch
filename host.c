@@ -612,6 +612,9 @@ while(1) {
 			 * Transfer the file name in the packet payload
 			 * to the file buffer data structure
 			 */
+
+         //printf("new_job->packet->payload: %s\n",new_job->packet->payload);
+
 			file_buf_put_name(&f_buf_upload, 
 				new_job->packet->payload, 
 				new_job->packet->length);

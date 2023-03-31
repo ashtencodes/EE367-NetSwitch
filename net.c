@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "main.h"
 #include "man.h"
@@ -447,8 +448,12 @@ for (i=0; i<g_net_link_num; i++) {
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
 		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // *** Assign port
-      printf("port = %d\n",g_net_link[i].socket_node1.port0);
+      //printf("port = %d\n",g_net_link[i].socket_node1.port0);
+      //struct hostent *lh = gethostbyname("wiliki.eng.hawaii.edu");
+      //addr.sin_addr.s_addr = inet_addr(lh->h_addr);
 		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
+                                                //
+      //printf("IP = %d\n",lh->h_addr);
 
 		//Bind socket to the port information listed above
 		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
