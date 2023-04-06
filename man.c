@@ -62,7 +62,7 @@ while(1) {
 		case 'c':
 		case 'p':
 		case 'u':
-		case 'd':
+		case 'd': 
 		case 'q': return cmd;
 		default: 
 			printf("Invalid: you entered %c\n\n", cmd);
@@ -230,21 +230,21 @@ usleep(TENMILLISEC);
 
 int file_download(struct man_port_at_man *curr_host)
 {
-int n;
-int host_id;
-char name[NAME_LENGTH];
-char msg[NAME_LENGTH];
+   int n;
+   int host_id;
+   char name[NAME_LENGTH];
+   char msg[NAME_LENGTH];
 
 
-printf("Enter host id you'd like to download from:  ");
-scanf("%d", &host_id);
-printf("Enter file name to download: ");
-scanf("%s", name);
-printf("\n");
+   printf("Enter file name to download: ");
+   scanf("%s", name);
+   printf("Enter host id that has the file: ");
+   scanf("%d", &host_id);
+   printf("\n");
 
-n = sprintf(msg, "u %d %s", host_id, name);
-write(curr_host->send_fd, msg, n);
-usleep(TENMILLISEC);
+   n = sprintf(msg, "d %d %s", host_id, name);
+   write(curr_host->send_fd, msg, n);
+   usleep(TENMILLISEC);
 
 }
 
