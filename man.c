@@ -215,6 +215,39 @@ write(curr_host->send_fd, msg, n);
 usleep(TENMILLISEC);
 }
 
+/*
+ * Command host to download file from another host.
+ *
+ * User is queried for the
+ *    - id of the host to ping.
+ * 	  - name of the file to transfer; 
+ *        the file is in the current directory 'dir' 
+ * A command message is sent to the current host.
+ *    The message starrts with 'u' followed by the 
+ *    -  id of the destination host 
+ *    -  name of file to transfer
+ */
+
+int file_download(struct man_port_at_man *curr_host)
+{
+int n;
+int host_id;
+char name[NAME_LENGTH];
+char msg[NAME_LENGTH];
+
+
+printf("Enter host id you'd like to download from:  ");
+scanf("%d", &host_id);
+printf("Enter file name to download: ");
+scanf("%s", name);
+printf("\n");
+
+n = sprintf(msg, "u %d %s", host_id, name);
+write(curr_host->send_fd, msg, n);
+usleep(TENMILLISEC);
+
+}
+
 
 /***************************** 
  * Main loop of the manager  *
@@ -258,7 +291,7 @@ while(1) {
 			file_upload(curr_host);
 			break;
 		case 'd': /* Download a file from a host */
-			printf("This command is not implemented\n");
+			file_download(curr_host);
 			break;
 		case 'q':  /* Quit */
 			return;
