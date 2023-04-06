@@ -354,7 +354,7 @@ while(1) {
 				new_job = (struct host_job *) 
 						malloc(sizeof(struct host_job));
 				new_job->type = JOB_FILE_DOWNLOAD_START;
-				new_job->file_upload_dst = dst;	
+				new_job->file_download_dst = dst;	
 				for (i=0; name[i] != '\0'; i++) {
 					new_job->fname_upload[i] = name[i];
 				}
@@ -436,12 +436,12 @@ while(1) {
 					job_q_add(&job_q, new_job);
 					break;
 
-				case (char) PKT_FILE_DOWNLOAD_END: 
-					new_job->type 
-						= JOB_FILE_UPLOAD_RECV_END;
-					//printf("Receive packet\n");
-					job_q_add(&job_q, new_job);
-					break;
+				// case (char) PKT_FILE_DOWNLOAD_END: 
+				// 	new_job->type 
+				// 		= JOB_FILE_UPLOAD_RECV_END;
+				// 	//printf("Receive packet\n");
+				// 	job_q_add(&job_q, new_job);
+				// 	break;
 					
 				default:
 					free(in_packet);
@@ -689,68 +689,66 @@ while(1) {
 
 		/* The next two jobs deal with downloading a file */
 
+		/*
+			Download start packages up a file 
+			Sends to the other host to download receive
+		*/ 
 		case JOB_FILE_DOWNLOAD_START: 
 
-			/* Upload receive start*/		
-			/* Initialize the file buffer data structure */
-			file_buf_init(&f_buf_upload);
+			//Package a packet that contains current machine and file name
 
+			//Need to add current machine
 			/* 
-			 * Transfer the file name in the packet payload
-			 * to the file buffer data structure
-			 */
-			file_buf_put_name(&f_buf_upload, 
-				new_job->packet->payload, 
-				new_job->packet->length);
-
-			free(new_job->packet);
-			free(new_job);
-			
-
-			/* 
-			 * Upload Receive End
-			 * Download packet payload into file buffer 
-			 * data structure 
-			 */
-
-			file_buf_add(&f_buf_upload, 
-			new_job->packet->payload,
-			new_job->packet->length);
-
-			free(new_job->packet);
-			free(new_job);
+				* Create packet which
+				* has the file name and src
+				*/
 
 			if (dir_valid == 1) {
 
-				n = sprintf(name, "./%s/%s", dir, oldFileName);
-				name[n] = '\0';
-				fp = fopen(name, "a");
+				for(i = 0; new_job->fname_download[i] != '\0'; i++);
 
-				if (fp != NULL) {
-					/* 
-					 * Write contents in the file
-					 * buffer into file
-					 */
+				new_packet = (struct packet *) 
+					malloc(sizeof(struct packet));
+				new_packet->dst 
+					= new_job->file_download_dst;
+				new_packet->src = (char) host_id;
+				new_packet->type 
+					= PKT_FILE_DOWNLOAD_START;
+				for (i=0; 
+					new_job->fname_upload[i]!= '\0'; 
+					i++) {
+					new_packet->payload[i] = 
+						new_job->fname_upload[i];
+				}
+				new_packet->length = i;
 
-					while (f_buf_upload.occ > 0) {
-						n = file_buf_remove(
-							&f_buf_upload, 
-							string,
-							PKT_PAYLOAD_MAX);
-						string[n] = '\0';
-						n = fwrite(string,
-							sizeof(char),
-							n, 
-							fp);
-					}
-
-					fclose(fp);
-				}	
+				new_job2 = (struct host_job *) malloc(sizeof(struct host_job));
+				new_job2->type = JOB_SEND_PKT_ALL_PORTS;
+				new_job2->packet = new_packet;
+				job_q_add(&job_q, new_job2);
 			}
+			
+			free(new_job);
 			break;
 
 			
-		case JOB_FILE_DOWNLOAD_END:
+		/* 
+			Download Receive runs Upload Start and Upload End
+		*/
+		case JOB_FILE_DOWNLOAD_RECV:
+
+			//Parse received packet
+
+			//Extract origin ID and file name
+
+			//Pass extracted data to upload start and upload end
+			
+			new_job2 = (struct host_job *) malloc(sizeof(struct host_job));
+			new_job2->type = JOB_FILE_UPLOAD_SEND;
+			strcpy(new_job2->fname_upload, new_job->packet->payload);
+			new_job2->file_upload_dst = new_job->packet->src;
+			job_q_add(&job_q, new_job2);
+			printf("\n\ndownload received\n\n");
 
 			break;
 

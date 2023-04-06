@@ -11,7 +11,7 @@ enum host_job_type {
 	JOB_FILE_UPLOAD_RECV_START,
 	JOB_FILE_UPLOAD_RECV_END, 
 	JOB_FILE_DOWNLOAD_START, 
-	JOB_FILE_DOWNLOAD_END
+	JOB_FILE_DOWNLOAD_RECV
 };
 
 struct host_job {
@@ -23,6 +23,7 @@ struct host_job {
 	char fname_upload[100];
 	int ping_timer;
 	int file_upload_dst;
+	int file_download_dst;
 	struct host_job *next;
 };
 
