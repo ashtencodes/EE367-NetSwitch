@@ -436,6 +436,13 @@ while(1) {
 					job_q_add(&job_q, new_job);
 					break;
 
+				case (char) PKT_FILE_DOWNLOAD_END: 
+					new_job->type 
+						= JOB_FILE_UPLOAD_RECV_END;
+					//printf("Receive packet\n");
+					job_q_add(&job_q, new_job);
+					break;
+					
 				default:
 					free(in_packet);
 					free(new_job);
