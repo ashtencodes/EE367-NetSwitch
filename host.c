@@ -348,6 +348,20 @@ while(1) {
 				job_q_add(&job_q, new_job);
 					
 				break;
+
+			case 'd': /* Dowload a file to a specified host */
+				sscanf(man_msg, "%d %s", &dst, name);
+				new_job = (struct host_job *) 
+						malloc(sizeof(struct host_job));
+				new_job->type = JOB_FILE_DOWNLOAD_START;
+				new_job->file_upload_dst = dst;	
+				for (i=0; name[i] != '\0'; i++) {
+					new_job->fname_upload[i] = name[i];
+				}
+				new_job->fname_upload[i] = '\0';
+				job_q_add(&job_q, new_job);
+					
+				break;
 			default:
 			;
 		}
@@ -657,6 +671,12 @@ while(1) {
 				}	
 			}
 			break;
+
+		/* The next two jobs deal with downloading a file */
+
+		case JOB_FILE_DOWNLOAD_START: 
+
+			
 		}
 
 	}
