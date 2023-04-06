@@ -362,6 +362,7 @@ while(1) {
 				job_q_add(&job_q, new_job);
 					
 				break;
+
 			default:
 			;
 		}
@@ -425,6 +426,13 @@ while(1) {
 					new_job->type 
 						= JOB_FILE_UPLOAD_RECV_END;
 					//printf("Receive packet\n");
+					job_q_add(&job_q, new_job);
+					break;
+
+				/* Next two packet types are for download operation */ 
+				case (char) PKT_FILE_DOWNLOAD_START:
+					new_job->type
+						= JOB_FILE_DOWNLOAD_START;
 					job_q_add(&job_q, new_job);
 					break;
 
@@ -676,7 +684,69 @@ while(1) {
 
 		case JOB_FILE_DOWNLOAD_START: 
 
+			/* Upload receive start*/		
+			/* Initialize the file buffer data structure */
+			file_buf_init(&f_buf_upload);
+
+			/* 
+			 * Transfer the file name in the packet payload
+			 * to the file buffer data structure
+			 */
+			file_buf_put_name(&f_buf_upload, 
+				new_job->packet->payload, 
+				new_job->packet->length);
+
+			free(new_job->packet);
+			free(new_job);
 			
+
+			/* 
+			 * Upload Receive End
+			 * Download packet payload into file buffer 
+			 * data structure 
+			 */
+
+			file_buf_add(&f_buf_upload, 
+			new_job->packet->payload,
+			new_job->packet->length);
+
+			free(new_job->packet);
+			free(new_job);
+
+			if (dir_valid == 1) {
+
+				n = sprintf(name, "./%s/%s", dir, oldFileName);
+				name[n] = '\0';
+				fp = fopen(name, "a");
+
+				if (fp != NULL) {
+					/* 
+					 * Write contents in the file
+					 * buffer into file
+					 */
+
+					while (f_buf_upload.occ > 0) {
+						n = file_buf_remove(
+							&f_buf_upload, 
+							string,
+							PKT_PAYLOAD_MAX);
+						string[n] = '\0';
+						n = fwrite(string,
+							sizeof(char),
+							n, 
+							fp);
+					}
+
+					fclose(fp);
+				}	
+			}
+			break;
+
+			
+		case JOB_FILE_DOWNLOAD_END:
+
+			break;
+
 		}
 
 	}
