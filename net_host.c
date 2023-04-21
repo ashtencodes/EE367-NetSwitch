@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #include "main.h"
 #include "man.h"
@@ -40,13 +41,21 @@ enum bool {FALSE, TRUE};
 
 /* 
  * Struct used to store a link. It is used when the 
- * network configuration file is loaded.
+ * netwok configuration file is loaded.
  */
+
+struct socket{
+	char link0[256];
+	char link1[256];
+	int port0;
+	int port1;
+};
 
 struct net_link {
 	enum NetLinkType type;
 	int pipe_node0;
 	int pipe_node1;
+	struct socket socket_node1;
 };
 
 
@@ -134,7 +143,7 @@ struct net_node *net_get_node_list();
  */
 struct net_port *net_get_port_list(int host_id)
 {
-
+//printf("val: host_id = %d\n", host_id);
 struct net_port **p;
 struct net_port *r;
 struct net_port *t;
@@ -143,6 +152,9 @@ r = NULL;
 p = &g_port_list;
 
 while (*p != NULL) {
+
+   //printf("node port host id: %d\n",(*p)->pipe_host_id);
+	
 	if ((*p)->pipe_host_id == host_id) {
 		t = *p;	
 		*p = (*p)->next;
@@ -153,7 +165,7 @@ while (*p != NULL) {
 		p = &((*p)->next);
 	}
 }
-
+//printf("r: %d\n", r->pipe_host_id);
 return r;
 }
 
@@ -355,7 +367,7 @@ int i;
 g_node_list = NULL;
 for (i=0; i<g_net_node_num; i++) {
 	p = (struct net_node *) malloc(sizeof(struct net_node));
-	p->id = i;
+	p->id = g_net_node[i].id;
 	p->type = g_net_node[i].type;
 	p->next = g_node_list;
 	g_node_list = p;
@@ -415,74 +427,71 @@ for (i=0; i<g_net_link_num; i++) {
 
 	}
 	else if (g_net_link[i].type == SOCKET) {
-		// *** Unsure about intializing this port information. 
-		// *** When finished, we need to plug it into the htons() line below ***
-		//Initialize port
-		p0 = (struct net_port *) malloc(sizeof(struct net_port));
-		p1 = (struct net_port *) malloc(sizeof(struct net_port));
+		
+		node0 = g_net_link[i].pipe_node0;
 
-		int sockfd, client_sock, clilen, pid;
+		p0 = (struct net_port *) malloc(sizeof(struct net_port));
+		p0->type = g_net_link[i].type;
+      //printf("host_id: %d\n",node0);
+		p0->pipe_host_id = node0;
+
+		int sockfd, clientfd;
 		struct sockaddr_in addr, cli_addr;
 
-		//Create socket
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
+      sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if(sockfd < 0) {
-			perror("Error creating socket"); 
+			perror("Error creating socket");
 			exit(EXIT_FAILURE);
 		}
-		printf("Server socket created\n"); 
 
 		//Provide socket with information
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET; //AF_INET is protocol for IPV4
-		addr.sin_port = htons(port); // *** Assign port 
+		addr.sin_port = htons(g_net_link[i].socket_node1.port0); // *** Assign port
+      //printf("port = %d\n",g_net_link[i].socket_node1.port0);
+      //struct hostent *lh = gethostbyname("wiliki.eng.hawaii.edu");
+      //addr.sin_addr.s_addr = inet_addr(lh->h_addr);
 		addr.sin_addr.s_addr = htonl(INADDR_ANY); //Bind socket to any available network interface, can use IP in the htonl() instead
+                                                //
+      //printf("IP = %d\n",lh->h_addr);
 
 		//Bind socket to the port information listed above
 		int bind_result = bind(sockfd, (struct sockaddr *)&addr, sizeof(addr));
 		if (bind_result < 0) {
 			perror("Error binding socket");
 			exit(EXIT_FAILURE);
-		}
-		printf("Bind successful");
+		} else {
+         printf("Server successfully binded\n");
+      }
 
 		//Listen for connections
-		int listen_result = listen(sockfd, 10);
-		printf("Server listening");
+		if((listen(sockfd, 1)) != 0){
+            printf("Listen failed...\n");
+            exit(0);
+      } else {
+            printf("Server listening...\n");
+      }
 
-		//Accept connection from that client
-		while(1) {
-			clilen = sizeof(cli_addr);
-			client_sock = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-			if (client_sock < 0) {
-				perror("ERROR on accept");
-				exit(1);
-			}
+      int len = sizeof(cli_addr);
 
-			printf("Accepted connection from %s:%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+      clientfd = accept(sockfd, (struct sockaddr*)&cli_addr, &len);
 
-			// *** I don't know if we need to use the code below
+      if(clientfd < 0){
+         printf("Server accept failed...\n");
+         exit(0);
+      } else {
+         printf("Server accepted the client!\n");
+      }
 
-			// // fork a new process to handle the client
-			// pid = fork();
-			// if (pid < 0) {
-			// 	perror("ERROR on fork");
-			// 	exit(1);
-			// }
+      int flags = fcntl(clientfd, F_GETFL);
+      fcntl(clientfd, F_SETFL, flags | O_NONBLOCK);
 
-			// if (pid == 0) {
-			// 	// child process
-			// 	close(sockfd);
-			// 	handle_client(client_sock);
-			// 	exit(0);
-			// } else {
-			// 	// parent process
-			// 	close(client_sock);
-			// }
-		}
+      p0->pipe_send_fd = clientfd;
+		p0->pipe_recv_fd = clientfd;
+		
+		p0->next = g_port_list;
+		g_port_list = p0;
 
-		//Close socket
-		close(sockfd);
 	}
 
 }
@@ -536,6 +545,7 @@ else {
 		if (node_type == 'H') {
 			fscanf(fp, " %d ", &node_id);
 			g_net_node[i].type = HOST;
+         //printf("node i: %d\n",i);
 			g_net_node[i].id = node_id;
 		}
 		else if (node_type == 'S') {
@@ -547,11 +557,11 @@ else {
 			printf(" net.c: Unidentified Node Type\n");
 		}
 
-		if (i != node_id) {
-			printf(" net.c: Incorrect node id\n");
-			fclose(fp);
-			return(0);
-		}
+		//if (i != node_id) {
+		//	printf(" net.c: Incorrect node id\n");
+		//	fclose(fp);
+		//	return(0);
+		//}
 	}
 }
 	/* 
@@ -566,6 +576,8 @@ else {
 int link_num;
 char link_type;
 int node0, node1;
+int port0, port1;
+char address0[256], address1[256];
 
 fscanf(fp, " %d ", &link_num);
 printf("Number of links = %d\n", link_num);
@@ -581,10 +593,23 @@ else {
 	for (i=0; i<link_num; i++) {
 		fscanf(fp, " %c ", &link_type);
 		if (link_type == 'P') {
+			//printf("detected a port\n");
 			fscanf(fp," %d %d ", &node0, &node1);
 			g_net_link[i].type = PIPE;
 			g_net_link[i].pipe_node0 = node0;
 			g_net_link[i].pipe_node1 = node1;
+		}
+		else if (link_type == 'S'){
+			printf("detected a socket\n");
+			fscanf(fp," %d %s %d %s %d ", &node0, &address0, &port0, &address1, &port1);
+			g_net_link[i].type = SOCKET;
+			g_net_link[i].pipe_node0 = node0;
+			strcpy(g_net_link[i].socket_node1.link0,address0);
+			g_net_link[i].socket_node1.port0 = port0;
+			strcpy(g_net_link[i].socket_node1.link1,address1);
+
+			// Verify everything is being read in correctly
+			//printf("socket link: %d %s %d %s %d \n", g_net_link[i].pipe_node0, g_net_link[i].socket_node1.link0, g_net_link[i].socket_node1.port0, g_net_link[i].socket_node1.link1, g_net_link[i].socket_node1.port1);
 		}
 		else {
 			printf("   net.c: Unidentified link type\n");
@@ -614,7 +639,8 @@ for (i=0; i<g_net_link_num; i++) {
 				g_net_link[i].pipe_node1);
 	}
 	else if (g_net_link[i].type == SOCKET) {
-		printf("   Socket: to be constructed (net.c)\n");
+		printf("   Link (Switch, %d) SOCKET\n", 
+				g_net_link[i].pipe_node0);
 	}
 }
 

@@ -93,6 +93,7 @@ node_port = (struct net_port **)
 
 	/* Load ports into the array */
 p = node_port_list;
+
 for (k = 0; k < node_port_num; k++) {
 	node_port[k] = p;
 	p = p->next;
@@ -142,6 +143,7 @@ while(1) {
 		{
             for (i=0; i<node_port_num; i++)
 			{
+				//printf("%d\n",node_port[i]->pipe_send_fd);
 				if (i != new_job->in_port_index) {
 					packet_send(node_port[i], new_job->packet);
 				}
