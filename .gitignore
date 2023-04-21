@@ -1,2 +1,3 @@
 *.o
-net367
+net367-server
+net367-client
