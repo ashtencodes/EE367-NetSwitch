@@ -33,4 +33,6 @@ switch.o: switch.c
 
 clean:
 	rm *.o
+	rm net367-server
+	rm net367-client
 
