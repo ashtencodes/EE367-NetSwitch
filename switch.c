@@ -57,6 +57,7 @@ struct net_port **node_port;  // Array of pointers to node ports
 int node_port_num;            // Number of node ports
 
 int i, k, n;
+int root_node_id = switch_id;
 
 struct packet *in_packet; /* Incoming packet */
 
