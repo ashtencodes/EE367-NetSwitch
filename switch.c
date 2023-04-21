@@ -20,6 +20,8 @@
 #define TENMILLISEC 10000   /* 10 millisecond sleep */
 #define MAX_PORT_TABLE_LENGTH 100
 
+struct packet *new_packet;
+
 // Helper function used to see if something exist within the table and returns at what index
 int check_switch_port_forwarding_table(struct switch_port_forwarding table [], int Value)
 {
@@ -103,6 +105,12 @@ for (k = 0; k < node_port_num; k++) {
 /* Initialize the job queue */
 job_q_init(&job_q);
 
+int localRootID = switch_id;
+int localRootDist = 0;
+int localParent = NULL;
+
+char packet_contents[3];
+
 while(1) {
 
 	for (k = 0; k < node_port_num; k++) { /* Scan all ports */
@@ -111,15 +119,22 @@ while(1) {
 		n = packet_recv(node_port[k], in_packet);
 
 		if (n > 0) {
+
 			new_job = (struct host_job *)
 				malloc(sizeof(struct host_job));
 			new_job->in_port_index = k;
 			new_job->packet = in_packet;
 
-			job_q_add(&job_q, new_job);
+			switch(in_packet->type) {
 
-		}
-		else {
+				case (char) PKT_SWITCH_CONTROL: 
+					new_job->type = JOB_CONTROL_RECV;
+					job_q_add(&job_q, new_job);
+					break;
+					
+			}
+
+		} else {
 			free(in_packet);
 		}
 	}
@@ -132,6 +147,58 @@ while(1) {
 
 		/* Get a new job from the job queue */
 		new_job = job_q_remove(&job_q);
+
+		switch(new_job->type) {
+
+		/* Send packets on all ports */	
+		case JOB_CONTROL_RECV:
+			//TO DO: Add code to handle control packets
+
+			free(new_job->packet);
+			free(new_job);
+			break;
+
+		case JOB_CONTROL_SEND:
+			//Code to send control packets
+
+			packet_contents[0] = localRootID;
+			packet_contents[1] = localRootDist;
+			packet_contents[2] = 'S';
+
+			for(int i = 0; i < MAX_PORT_TABLE_LENGTH; i++)
+			{
+				if (MAC_Address_Table[i].valid == Valid)
+				{
+					if(MAC_Address_Table[n].isParent == 1)
+					{
+						packet_contents[3] = 'Y';
+					} else {
+						packet_contents[3] = 'N';
+					}
+
+					new_packet = (struct packet *) 
+							malloc(sizeof(struct packet));
+					new_packet->dst 
+						= NULL;
+					new_packet->src = (char) switch_id;
+					new_packet->type 
+						= PKT_SWITCH_CONTROL;
+
+					for (i=0; i<4; i++) {
+						new_packet->payload[i] 
+							= packet_contents[i];
+					}
+
+					new_packet->length = 4;
+
+					packet_send(node_port[MAC_Address_Table[i].port], new_packet);
+				}
+			}
+
+			free(new_job->packet);
+			free(new_job);
+			break;
+		}
 
 		if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
 		{
@@ -158,6 +225,12 @@ while(1) {
 		free(new_job->packet);
 		free(new_job);
 	}
+
+	// Switch sontantly sends out control packets to other switches
+
+	new_job2 = (struct host_job *) malloc(sizeof(struct host_job));
+	new_job2->type = JOB_CONTROL_SEND;
+	job_q_add(&job_q, new_job2);
 
 	/* The switch goes to sleep for 10 ms */
 	usleep(TENMILLISEC);
