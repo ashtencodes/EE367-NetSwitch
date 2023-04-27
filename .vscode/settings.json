@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "packet.h": "c",
-        "host.h": "c"
+        "host.h": "c",
+        "types.h": "c"
     }
 }
