@@ -57,8 +57,9 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
             return i;
         }
 
-		localPortTree[i] = HOST_EDGE;
+		localPortTree[src_port] = HOST_EDGE;
     }
+
 	return -1;
 }
 /* Initialize job queue */
@@ -129,6 +130,8 @@ for (int i=0; i<MAX_PORT_TABLE_LENGTH; i++){
 	MAC_Address_Table[i].valid = NotValid;
 	localPortTree[i] = NONE;
 }
+
+localPortTree[switch_id] = PARENT;
 
 /*
  * Create an array node_port[ ] to store the network link ports
@@ -207,49 +210,54 @@ while(1) {
 			/* Send packets on all ports */	
 			case JOB_CONTROL_RECV: //Code to handle control packets
 
+			    if (new_job->packet->payload[3] == 'Y') {
+
+						localPortTree[new_job->packet->src] = CHILD;
+
+					}
+
 					//printf("payload[2] = %c\n", new_job->packet->payload[2]);
-				if(new_job->packet->payload[2] == 'S')
-				{
+				if (new_job->packet->payload[2] == 'S') {
 
 					 //Local port tree array: tree that represents the MST. edges are 1
 
-					if(new_job->packet->payload[0] < localRootID) {
+					if (new_job->packet->payload[0] < localRootID) {
 
 						localRootID = new_job->packet->payload[0];
-						localParent = new_job->in_port_index;
+						localParent = new_job->packet->src;
 						localRootDist = new_job->packet->payload[1] + 1;
 
 						for(k = 0; k < MAX_PORT_TABLE_LENGTH; k++){
-								if(localPortTree[k] == PARENT){
-									localPortTree[k] = BAD_EDGE;
-								}
+
+							if(localPortTree[k] == PARENT){
+								localPortTree[k] = BAD_EDGE;
 							}
+
+						}
 
 						localPortTree[localParent] = PARENT;
 
-					} else if(new_job->packet->payload[0] == localRootID) {
+					} else if (new_job->packet->payload[0] == localRootID) {
 
 						if(new_job->packet->payload[1] + 1 < localRootDist) {
 
 							localRootDist = new_job->packet->payload[1] + 1;
-							localParent = new_job->in_port_index;
+							localParent = new_job->packet->src;
 
 							for(k = 0; k < MAX_PORT_TABLE_LENGTH; k++){
 
 								if(localPortTree[k] == PARENT){
 									localPortTree[k] = BAD_EDGE;
 								}
+
 							}
 
 						}
 
 						localPortTree[localParent] = PARENT;
 							
-					} else if(new_job->packet->payload[3] == 'Y') {
-
-						localPortTree[new_job->in_port_index] = CHILD;
-
 					}
+
 				}
 
 				printf("Switch: %d\n", switch_id);
