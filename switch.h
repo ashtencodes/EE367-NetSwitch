@@ -16,4 +16,23 @@ struct switch_port_forwarding {
 	int isParent;
 };
 
+struct switch_job {
+	enum switch_job_type type;
+	struct packet *packet;
+	int in_port_index;
+	int out_port_index;
+	char fname_download[100];
+	char fname_upload[100];
+	int ping_timer;
+	int file_upload_dst;
+   int file_download_dst;
+	struct host_job *next;
+};
+
+struct switch_job_queue {
+	struct switch_job *head;
+	struct switch_job *tail;
+	int occ;
+};
+
 void switch_main(int switch_id);

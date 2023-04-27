@@ -13,7 +13,6 @@
 #include "main.h"
 #include "net.h"
 #include "man.h"
-#include "host.h"
 #include "packet.h"
 #include "switch.h"
 
@@ -21,6 +20,12 @@
 #define MAX_PORT_TABLE_LENGTH 100
 
 struct packet *new_packet;
+
+enum localPortTreeValue
+{
+	NO,
+	YES
+};
 
 // Helper function used to see if something exist within the table and returns at what index
 int check_switch_port_forwarding_table(struct switch_port_forwarding table [], int Value)
@@ -49,6 +54,43 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
     }
 	return -1;
 }
+/* Initialize job queue */
+void job_q_init(struct switch_job_queue *j_q)
+{
+j_q->occ = 0;
+j_q->head = NULL;
+j_q->tail = NULL;
+}
+struct host_job *job_q_remove(struct switch_job_queue *j_q)
+{
+struct host_job *j;
+
+if (j_q->occ == 0) return(NULL);
+j = j_q->head;
+j_q->head = (j_q->head)->next;
+j_q->occ--;
+return(j);
+}
+
+void job_q_add(struct switch_job_queue *j_q, struct switch_job *j)
+{
+if (j_q->head == NULL ) {
+	j_q->head = j;
+	j_q->tail = j;
+	j_q->occ = 1;
+}
+else {
+	(j_q->tail)->next = j;
+	j->next = NULL;
+	j_q->tail = j;
+	j_q->occ++;
+}
+}
+
+int job_q_num(struct switch_job_queue *j_q)
+{
+return j_q->occ;
+}
 
 void switch_main(int switch_id)
 {
@@ -64,12 +106,13 @@ int root_node_id = switch_id;
 struct packet *in_packet; /* Incoming packet */
 
 struct net_port *p;
-struct host_job *new_job;
-struct host_job *new_job2;
+struct switch_job *new_job;
+struct switch_job *new_job2;
 
-struct job_queue job_q;
+struct switch_job_queue job_q;
 
 struct switch_port_forwarding MAC_Address_Table[MAX_PORT_TABLE_LENGTH];
+enum localPortTreeValue localPortTree[MAX_PORT_TABLE_LENGTH];
 
 
 /*
@@ -107,7 +150,7 @@ job_q_init(&job_q);
 
 int localRootID = switch_id;
 int localRootDist = 0;
-int localParent = NULL;
+int localParent = -1;
 
 char packet_contents[3];
 
@@ -120,8 +163,8 @@ while(1) {
 
 		if (n > 0) {
 
-			new_job = (struct host_job *)
-				malloc(sizeof(struct host_job));
+			new_job = (struct switch_job *)
+				malloc(sizeof(struct switch_job));
 			new_job->in_port_index = k;
 			new_job->packet = in_packet;
 
@@ -153,6 +196,31 @@ while(1) {
 		/* Send packets on all ports */	
 		case JOB_CONTROL_RECV:
 			//TO DO: Add code to handle control packets
+
+			if(new_job->packet->payload[2] == 'S')
+			{
+				if(new_job->packet->payload[0] < localRootID)
+				{
+					localRootID = new_job->packet->payload[0];
+					localParent = k;
+					localRootDist = new_job->packet->payload[1] + 1;
+				}
+				else if(new_job->packet->payload[0] == localRootID)
+				{
+					if(new_job->packet->payload[1] + 1 < localRootDist)
+					{
+						localRootDist = new_job->packet->payload[1] + 1;
+						localParent = k;
+					}
+				}
+			}
+			if (new_job->packet->payload[2] == 'H') localPortTree[k] = YES;
+			else if (new_job->packet->payload[2] == 'S')
+			{
+				if (localParent == k) localPortTree[k] = YES;
+				else if (new_job->packet->payload[3] == 'Y') localPortTree[k] = YES;
+				else localPortTree[k] = NO;
+			}
 
 			free(new_job->packet);
 			free(new_job);
@@ -228,7 +296,7 @@ while(1) {
 
 	// Switch sontantly sends out control packets to other switches
 
-	new_job2 = (struct host_job *) malloc(sizeof(struct host_job));
+	new_job2 = (struct switch_job *) malloc(sizeof(struct switch_job));
 	new_job2->type = JOB_CONTROL_SEND;
 	job_q_add(&job_q, new_job2);
 
