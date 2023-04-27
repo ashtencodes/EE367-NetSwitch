@@ -55,15 +55,15 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
 	return -1;
 }
 /* Initialize job queue */
-void job_q_init(struct switch_job_queue *j_q)
+void switch_job_q_init(struct switch_job_queue *j_q)
 {
 j_q->occ = 0;
 j_q->head = NULL;
 j_q->tail = NULL;
 }
-struct host_job *job_q_remove(struct switch_job_queue *j_q)
+struct switch_job *switch_job_q_remove(struct switch_job_queue *j_q)
 {
-struct host_job *j;
+struct switch_job *j;
 
 if (j_q->occ == 0) return(NULL);
 j = j_q->head;
@@ -72,7 +72,7 @@ j_q->occ--;
 return(j);
 }
 
-void job_q_add(struct switch_job_queue *j_q, struct switch_job *j)
+void switch_job_q_add(struct switch_job_queue *j_q, struct switch_job *j)
 {
 if (j_q->head == NULL ) {
 	j_q->head = j;
@@ -87,7 +87,7 @@ else {
 }
 }
 
-int job_q_num(struct switch_job_queue *j_q)
+int switch_job_q_num(struct switch_job_queue *j_q)
 {
 return j_q->occ;
 }
@@ -146,7 +146,7 @@ for (k = 0; k < node_port_num; k++) {
 }
 
 /* Initialize the job queue */
-job_q_init(&job_q);
+switch_job_q_init(&job_q);
 
 int localRootID = switch_id;
 int localRootDist = 0;
@@ -172,9 +172,12 @@ while(1) {
 
 				case (char) PKT_SWITCH_CONTROL: 
 					new_job->type = JOB_CONTROL_RECV;
-					job_q_add(&job_q, new_job);
+					switch_job_q_add(&job_q, new_job);
 					break;
 					
+				default:
+					free(in_packet);
+					free(new_job);
 			}
 
 		} else {
@@ -186,57 +189,63 @@ while(1) {
  	 * Execute one job in the job queue
  	 */
 
-	if (job_q_num(&job_q) > 0) {
+	if (switch_job_q_num(&job_q) > 0) {
 
 		/* Get a new job from the job queue */
-		new_job = job_q_remove(&job_q);
+		new_job = switch_job_q_remove(&job_q);
 
 		switch(new_job->type) {
 
-		/* Send packets on all ports */	
-		case JOB_CONTROL_RECV:
-			//TO DO: Add code to handle control packets
-
-			if(new_job->packet->payload[2] == 'S')
-			{
-				if(new_job->packet->payload[0] < localRootID)
+			/* Send packets on all ports */	
+			case JOB_CONTROL_RECV:
+				//TO DO: Add code to handle control packets
+				for(int k = 1; k <= node_port_num; k++)
 				{
-					localRootID = new_job->packet->payload[0];
-					localParent = k;
-					localRootDist = new_job->packet->payload[1] + 1;
-				}
-				else if(new_job->packet->payload[0] == localRootID)
-				{
-					if(new_job->packet->payload[1] + 1 < localRootDist)
+					//printf("payload[2] = %c\n", new_job->packet->payload[2]);
+					if(new_job->packet->payload[2] == 'S')
 					{
-						localRootDist = new_job->packet->payload[1] + 1;
-						localParent = k;
+						//printf("Switch %d received control packet: localParent %d\n", switch_id, localParent);
+						for (int i = 1; i <= node_port_num; i++){
+							printf("localPortTree[%d] = %d\n", i, localPortTree[i]);
+						}
+						printf("\n");
+						if(new_job->packet->payload[0] < localRootID)
+						{
+							localRootID = new_job->packet->payload[0];
+							localParent = k;
+							localRootDist = new_job->packet->payload[1] + 1;
+						}
+						else if(new_job->packet->payload[0] == localRootID)
+						{
+							if(new_job->packet->payload[1] + 1 < localRootDist)
+							{
+								localRootDist = new_job->packet->payload[1] + 1;
+								localParent = k;
+							}
+						}
+					}
+					if (new_job->packet->payload[2] == 'H') localPortTree[k] = YES;
+					else if (new_job->packet->payload[2] == 'S')
+					{
+						if (localParent == k) localPortTree[k] = YES;
+						else if (new_job->packet->payload[3] == 'Y') localPortTree[k] = YES;
+						else localPortTree[k] = NO;
 					}
 				}
-			}
-			if (new_job->packet->payload[2] == 'H') localPortTree[k] = YES;
-			else if (new_job->packet->payload[2] == 'S')
-			{
-				if (localParent == k) localPortTree[k] = YES;
-				else if (new_job->packet->payload[3] == 'Y') localPortTree[k] = YES;
-				else localPortTree[k] = NO;
-			}
+				break;
 
-			free(new_job->packet);
-			free(new_job);
-			break;
+			case JOB_CONTROL_SEND:
+				//Code to send control packets
+				in_packet = (struct packet *) malloc(sizeof(struct packet));
+				new_job->packet = in_packet;
 
-		case JOB_CONTROL_SEND:
-			//Code to send control packets
-
-			packet_contents[0] = localRootID;
-			packet_contents[1] = localRootDist;
-			packet_contents[2] = 'S';
-
-			for(int i = 0; i < MAX_PORT_TABLE_LENGTH; i++)
-			{
-				if (MAC_Address_Table[i].valid == Valid)
+				packet_contents[0] = localRootID;
+				packet_contents[1] = localRootDist;
+				packet_contents[2] = 'S';
+				
+				for(int k = 0; k < node_port_num; k++)
 				{
+					
 					if(MAC_Address_Table[n].isParent == 1)
 					{
 						packet_contents[3] = 'Y';
@@ -244,28 +253,21 @@ while(1) {
 						packet_contents[3] = 'N';
 					}
 
-					new_packet = (struct packet *) 
-							malloc(sizeof(struct packet));
-					new_packet->dst 
-						= NULL;
-					new_packet->src = (char) switch_id;
-					new_packet->type 
+					new_job->packet->dst 
+						= k;
+					new_job->packet->src = (char) switch_id;
+					new_job->packet->type 
 						= PKT_SWITCH_CONTROL;
 
 					for (i=0; i<4; i++) {
-						new_packet->payload[i] 
+						new_job->packet->payload[i] 
 							= packet_contents[i];
 					}
-
-					new_packet->length = 4;
-
-					packet_send(node_port[MAC_Address_Table[i].port], new_packet);
+					//printf("payload[2] = %c\n", new_job->packet->payload[2]);
+					new_job->packet->length = 4;
+					packet_send(node_port[k], new_job->packet);
 				}
-			}
-
-			free(new_job->packet);
-			free(new_job);
-			break;
+				break;
 		}
 
 		if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
@@ -289,7 +291,6 @@ while(1) {
 		{
 			packet_send(node_port[destination_port], new_job->packet);
 		}
-
 		free(new_job->packet);
 		free(new_job);
 	}
@@ -298,7 +299,7 @@ while(1) {
 
 	new_job2 = (struct switch_job *) malloc(sizeof(struct switch_job));
 	new_job2->type = JOB_CONTROL_SEND;
-	job_q_add(&job_q, new_job2);
+	switch_job_q_add(&job_q, new_job2);
 
 	/* The switch goes to sleep for 10 ms */
 	usleep(TENMILLISEC);

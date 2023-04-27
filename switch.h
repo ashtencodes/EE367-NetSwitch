@@ -25,8 +25,8 @@ struct switch_job {
 	char fname_upload[100];
 	int ping_timer;
 	int file_upload_dst;
-   int file_download_dst;
-	struct host_job *next;
+   	int file_download_dst;
+	struct switch_job *next;
 };
 
 struct switch_job_queue {
