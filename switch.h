@@ -8,12 +8,20 @@ enum switch_job_type {
 	JOB_CONTROL_RECV
 };
 
+enum localPortTreeValue
+{
+	NONE,
+	HOST_EDGE,
+	BAD_EDGE,
+	PARENT,
+	CHILD
+};
+
 struct switch_port_forwarding {
 	enum ValidEntry valid;
 	char dst;
 	int port;
-	int isChild;
-	int isParent;
+	enum localPortTreeValue type;
 };
 
 struct switch_job {

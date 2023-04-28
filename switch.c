@@ -21,17 +21,6 @@
 
 struct packet *new_packet;
 
-enum localPortTreeValue
-{
-	NONE,
-	HOST_EDGE,
-	BAD_EDGE,
-	PARENT,
-	CHILD
-};
-
-enum localPortTreeValue localPortTree[MAX_PORT_TABLE_LENGTH];
-
 // Helper function used to see if something exist within the table and returns at what index
 int check_switch_port_forwarding_table(struct switch_port_forwarding table [], int Value)
 {
@@ -57,10 +46,9 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
             return i;
         }
 
-		localPortTree[src_port] = HOST_EDGE;
     }
 
-	return -1;
+	return -1; 
 }
 /* Initialize job queue */
 void switch_job_q_init(struct switch_job_queue *j_q)
@@ -128,10 +116,8 @@ struct switch_port_forwarding MAC_Address_Table[MAX_PORT_TABLE_LENGTH];
  */
 for (int i=0; i<MAX_PORT_TABLE_LENGTH; i++){
 	MAC_Address_Table[i].valid = NotValid;
-	localPortTree[i] = NONE;
+	MAC_Address_Table[i].type = NONE;
 }
-
-localPortTree[switch_id] = PARENT;
 
 /*
  * Create an array node_port[ ] to store the network link ports
@@ -141,7 +127,9 @@ node_port_list = net_get_port_list(switch_id);
 
 	/*  Count the number of network link ports */
 node_port_num = 0;
+printf("Host switch id %d \n", switch_id);
 for (p=node_port_list; p!=NULL; p=p->next) {
+	printf("Connection %d\n", p->pipe_host_id);
 	node_port_num++;
 }
 	/* Create memory space for the array */
@@ -162,6 +150,8 @@ switch_job_q_init(&job_q);
 int localRootID = switch_id;
 int localRootDist = 0;
 int localParent = -1;
+
+int macAddressIndex;
 
 char packet_contents[3];
 
@@ -210,11 +200,13 @@ while(1) {
 			/* Send packets on all ports */	
 			case JOB_CONTROL_RECV: //Code to handle control packets
 
+				macAddressIndex = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->dst);
+
 			    if (new_job->packet->payload[3] == 'Y') {
 
-						localPortTree[new_job->packet->src] = CHILD;
+						MAC_Address_Table[macAddressIndex].type = CHILD;
 
-					}
+				}
 
 					//printf("payload[2] = %c\n", new_job->packet->payload[2]);
 				if (new_job->packet->payload[2] == 'S') {
@@ -224,47 +216,47 @@ while(1) {
 					if (new_job->packet->payload[0] < localRootID) {
 
 						localRootID = new_job->packet->payload[0];
-						localParent = new_job->packet->src;
+						localParent = new_job->in_port_index;
 						localRootDist = new_job->packet->payload[1] + 1;
 
-						for(k = 0; k < MAX_PORT_TABLE_LENGTH; k++){
+						for(k = 0; k < node_port_num; k++){
 
-							if(localPortTree[k] == PARENT){
-								localPortTree[k] = BAD_EDGE;
+							if(MAC_Address_Table[k].type == PARENT){
+								MAC_Address_Table[k].type = BAD_EDGE;
 							}
 
 						}
 
-						localPortTree[localParent] = PARENT;
+						MAC_Address_Table[macAddressIndex].type = PARENT;
 
 					} else if (new_job->packet->payload[0] == localRootID) {
 
 						if(new_job->packet->payload[1] + 1 < localRootDist) {
 
 							localRootDist = new_job->packet->payload[1] + 1;
-							localParent = new_job->packet->src;
+							localParent = new_job->in_port_index;
 
-							for(k = 0; k < MAX_PORT_TABLE_LENGTH; k++){
+							for(k = 0; k < node_port_num; k++){
 
-								if(localPortTree[k] == PARENT){
-									localPortTree[k] = BAD_EDGE;
+								if(MAC_Address_Table[k].type == PARENT){
+									MAC_Address_Table[k].type = BAD_EDGE;
 								}
 
 							}
 
 						}
 
-						localPortTree[localParent] = PARENT;
+						MAC_Address_Table[macAddressIndex].type = PARENT;
 							
 					}
 
 				}
 
-				printf("Switch: %d\n", switch_id);
-				for (int i = 0; i < MAX_PORT_TABLE_LENGTH; i++){
-					printf("localPortTree[%d] = %d\n", i, localPortTree[i]);
-				}
-				printf("\n");
+				//printf("Switch: %d\n", switch_id);
+				//for (int i = 0; i < node_port_num; i++){
+					//printf("Mac Address Table[%d] = %d\n", i, MAC_Address_Table[i].type);
+				//}
+				//printf("\n");
 
 				break;
 
@@ -280,7 +272,7 @@ while(1) {
 				for(int k = 0; k < node_port_num; k++)
 				{
 					
-					if(localPortTree[k] == PARENT)
+					if(MAC_Address_Table[k].type == PARENT)
 					{
 						packet_contents[3] = 'Y';
 					} else {
