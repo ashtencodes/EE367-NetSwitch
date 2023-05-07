@@ -198,12 +198,7 @@ while(1) {
 					}
 				}
 
-				//printf("Switch: %d\n", switch_id);
-				//for (int i = 0; i < node_port_num; i++){
-					//printf("Mac Address Table[%d] = %d\n", i, MAC_Address_Table[i].type);
-				//}
-				//printf("\n");
-
+				printf("Switch: %d\n localParent %d\n local root dest %d\n in port index %d\n", switch_id, localParent, localRootDist, new_job->in_port_index);
 				break;
 
 			case JOB_CONTROL_SEND:
