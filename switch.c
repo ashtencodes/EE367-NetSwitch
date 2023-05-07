@@ -13,6 +13,7 @@
 #include "main.h"
 #include "net.h"
 #include "man.h"
+#include "host.h"
 #include "packet.h"
 #include "switch.h"
 
@@ -50,43 +51,6 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
 
 	return -1; 
 }
-/* Initialize job queue */
-void switch_job_q_init(struct switch_job_queue *j_q)
-{
-j_q->occ = 0;
-j_q->head = NULL;
-j_q->tail = NULL;
-}
-struct switch_job *switch_job_q_remove(struct switch_job_queue *j_q)
-{
-struct switch_job *j;
-
-if (j_q->occ == 0) return(NULL);
-j = j_q->head;
-j_q->head = (j_q->head)->next;
-j_q->occ--;
-return(j);
-}
-
-void switch_job_q_add(struct switch_job_queue *j_q, struct switch_job *j)
-{
-if (j_q->head == NULL ) {
-	j_q->head = j;
-	j_q->tail = j;
-	j_q->occ = 1;
-}
-else {
-	(j_q->tail)->next = j;
-	j->next = NULL;
-	j_q->tail = j;
-	j_q->occ++;
-}
-}
-
-int switch_job_q_num(struct switch_job_queue *j_q)
-{
-return j_q->occ;
-}
 
 void switch_main(int switch_id)
 {
@@ -102,10 +66,10 @@ int root_node_id = switch_id;
 struct packet *in_packet; /* Incoming packet */
 
 struct net_port *p;
-struct switch_job *new_job;
-struct switch_job *new_job2;
+struct host_job *new_job;
+struct host_job *new_job2;
 
-struct switch_job_queue job_q;
+struct job_queue job_q;
 
 struct switch_port_forwarding MAC_Address_Table[MAX_PORT_TABLE_LENGTH];
 
@@ -116,7 +80,6 @@ struct switch_port_forwarding MAC_Address_Table[MAX_PORT_TABLE_LENGTH];
  */
 for (int i=0; i<MAX_PORT_TABLE_LENGTH; i++){
 	MAC_Address_Table[i].valid = NotValid;
-	MAC_Address_Table[i].type = NONE;
 }
 
 /*
@@ -127,9 +90,7 @@ node_port_list = net_get_port_list(switch_id);
 
 	/*  Count the number of network link ports */
 node_port_num = 0;
-printf("Host switch id %d \n", switch_id);
 for (p=node_port_list; p!=NULL; p=p->next) {
-	printf("Connection %d\n", p->pipe_host_id);
 	node_port_num++;
 }
 	/* Create memory space for the array */
@@ -145,11 +106,12 @@ for (k = 0; k < node_port_num; k++) {
 }
 
 /* Initialize the job queue */
-switch_job_q_init(&job_q);
+job_q_init(&job_q);
 
 int localRootID = switch_id;
 int localRootDist = 0;
 int localParent = -1;
+enum localPortTreeValue localPortTree[MAX_PORT_TABLE_LENGTH];
 
 int macAddressIndex;
 
@@ -164,8 +126,8 @@ while(1) {
 
 		if (n > 0) {
 
-			new_job = (struct switch_job *)
-				malloc(sizeof(struct switch_job));
+			new_job = (struct host_job *)
+				malloc(sizeof(struct host_job));
 			new_job->in_port_index = k;
 			new_job->packet = in_packet;
 
@@ -173,7 +135,7 @@ while(1) {
 
 				case (char) PKT_SWITCH_CONTROL: 
 					new_job->type = JOB_CONTROL_RECV;
-					switch_job_q_add(&job_q, new_job);
+					job_q_add(&job_q, new_job);
 					break;
 					
 				default:
@@ -190,23 +152,15 @@ while(1) {
  	 * Execute one job in the job queue
  	 */
 
-	if (switch_job_q_num(&job_q) > 0) {
+	if (job_q_num(&job_q) > 0) {
 
 		/* Get a new job from the job queue */
-		new_job = switch_job_q_remove(&job_q);
+		new_job = job_q_remove(&job_q);
 
 		switch(new_job->type) {
 
 			/* Send packets on all ports */	
 			case JOB_CONTROL_RECV: //Code to handle control packets
-
-				macAddressIndex = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->dst);
-
-			    if (new_job->packet->payload[3] == 'Y') {
-
-						MAC_Address_Table[macAddressIndex].type = CHILD;
-
-				}
 
 					//printf("payload[2] = %c\n", new_job->packet->payload[2]);
 				if (new_job->packet->payload[2] == 'S') {
@@ -219,37 +173,29 @@ while(1) {
 						localParent = new_job->in_port_index;
 						localRootDist = new_job->packet->payload[1] + 1;
 
-						for(k = 0; k < node_port_num; k++){
-
-							if(MAC_Address_Table[k].type == PARENT){
-								MAC_Address_Table[k].type = BAD_EDGE;
-							}
-
-						}
-
-						MAC_Address_Table[macAddressIndex].type = PARENT;
-
-					} else if (new_job->packet->payload[0] == localRootID) {
-
+					} 
+					else if (new_job->packet->payload[0] == localRootID) {
 						if(new_job->packet->payload[1] + 1 < localRootDist) {
-
 							localRootDist = new_job->packet->payload[1] + 1;
 							localParent = new_job->in_port_index;
-
-							for(k = 0; k < node_port_num; k++){
-
-								if(MAC_Address_Table[k].type == PARENT){
-									MAC_Address_Table[k].type = BAD_EDGE;
-								}
-
-							}
-
 						}
-
-						MAC_Address_Table[macAddressIndex].type = PARENT;
-							
 					}
 
+				}
+
+				if (new_job->packet->payload[2] == 'H') {
+					localPortTree[new_job->in_port_index] = YES;
+				}
+				else if (new_job->packet->payload[2] == 'S') {
+					if (localParent == new_job->in_port_index) {
+						localPortTree[new_job->in_port_index] = YES;
+					}
+					else if (new_job->packet->payload[3] == 'Y') {
+						localPortTree[new_job->in_port_index] = YES;
+					}
+					else {
+						localPortTree[new_job->in_port_index] = NO;
+					}
 				}
 
 				//printf("Switch: %d\n", switch_id);
@@ -272,7 +218,7 @@ while(1) {
 				for(int k = 0; k < node_port_num; k++)
 				{
 					
-					if(MAC_Address_Table[k].type == PARENT)
+					if(localParent == k)
 					{
 						packet_contents[3] = 'Y';
 					} else {
@@ -323,9 +269,9 @@ while(1) {
 
 	// Switch sontantly sends out control packets to other switches
 
-	new_job2 = (struct switch_job *) malloc(sizeof(struct switch_job));
+	new_job2 = (struct host_job *) malloc(sizeof(struct host_job));
 	new_job2->type = JOB_CONTROL_SEND;
-	switch_job_q_add(&job_q, new_job2);
+	job_q_add(&job_q, new_job2);
 
 	/* The switch goes to sleep for 10 ms */
 	usleep(TENMILLISEC);
