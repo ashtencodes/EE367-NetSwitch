@@ -14,6 +14,7 @@ struct switch_port_forwarding {
 	enum ValidEntry valid;
 	char dst;
 	int port;
+	enum localPortTreeValue localPortTree;
 };
 
 

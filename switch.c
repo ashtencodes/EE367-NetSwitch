@@ -35,7 +35,7 @@ int check_switch_port_forwarding_table(struct switch_port_forwarding table [], i
     return -1;
 }
 
-int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int src_port)
+int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int src_port, enum localPortTreeValue localPortTree)
 {
     for (int i = 0; i < MAX_PORT_TABLE_LENGTH; i++)
     {
@@ -44,12 +44,37 @@ int assign_entry_in_table(struct switch_port_forwarding table [], char dst, int 
             table[i].valid = Valid;
             table[i].dst = dst;
             table[i].port = src_port;
+			table[i].localPortTree = localPortTree;
             return i;
         }
 
     }
 
 	return -1; 
+}
+
+int port_to_index(struct switch_port_forwarding table [], int port)
+{
+	for (int i = 0; i < MAX_PORT_TABLE_LENGTH; i++)
+	{
+		if (table[i].valid == Valid && table[i].port == port)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+enum localPortTreeValue valid_port_in_table(struct switch_port_forwarding table [], int port)
+{
+	for (int i = 0; i < MAX_PORT_TABLE_LENGTH; i++)
+	{
+		if (table[i].valid == Valid && table[i].port == port)
+		{
+			return table[i].localPortTree;
+		}
+	}
+	return YES;
 }
 
 void switch_main(int switch_id)
@@ -111,9 +136,10 @@ job_q_init(&job_q);
 int localRootID = switch_id;
 int localRootDist = 0;
 int localParent = -1;
-enum localPortTreeValue localPortTree[MAX_PORT_TABLE_LENGTH];
 
 int macAddressIndex;
+int destination_port;
+int val;
 
 char packet_contents[3];
 
@@ -139,8 +165,10 @@ while(1) {
 					break;
 					
 				default:
-					free(in_packet);
-					free(new_job);
+					//printf("switch %d\ngot into default\n count jobs %d \n", switch_id, job_q_num(&job_q));
+					job_q_init(&job_q);
+					job_q_add(&job_q, new_job);
+					break;
 			}
 
 		} else {
@@ -156,7 +184,7 @@ while(1) {
 
 		/* Get a new job from the job queue */
 		new_job = job_q_remove(&job_q);
-
+		//printf("%d\n", new_job->type);
 		switch(new_job->type) {
 
 			/* Send packets on all ports */	
@@ -170,35 +198,84 @@ while(1) {
 					if (new_job->packet->payload[0] < localRootID) {
 
 						localRootID = new_job->packet->payload[0];
-						localParent = new_job->in_port_index;
+						localParent = new_job->packet->src;
 						localRootDist = new_job->packet->payload[1] + 1;
-
+						//printf("Switch: %d\n src %d\n localRootID %d \n localParent %d\n local root dest %d\n in port index %d\n", switch_id, new_job->packet->src, localRootID, localParent, localRootDist, new_job->in_port_index);
 					} 
 					else if (new_job->packet->payload[0] == localRootID) {
 						if(new_job->packet->payload[1] + 1 < localRootDist) {
+							//printf("Switch: %d\n src %d\n %d < %d\n", switch_id, new_job->packet->src, new_job->packet->payload[1]+1, localRootDist);
 							localRootDist = new_job->packet->payload[1] + 1;
-							localParent = new_job->in_port_index;
+							localParent = new_job->packet->src;
+							//printf("Switch: %d\n localRootID %d \n localParent %d\n local root dest %d\n in port index %d\n", switch_id, localRootID, localParent, localRootDist, new_job->in_port_index);
 						}
 					}
 
 				}
-
+				
+				
 				if (new_job->packet->payload[2] == 'H') {
-					localPortTree[new_job->in_port_index] = YES;
+					if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
+					{
+						//printf("switch %d Test %d, %d\n", switch_id, new_job->packet->src, new_job->in_port_index);
+						assign_entry_in_table(MAC_Address_Table, new_job->packet->src, new_job->in_port_index, YES);
+					}
+					else
+					{
+						macAddressIndex = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src);
+						if (MAC_Address_Table[macAddressIndex].localPortTree == NO)
+						{
+							MAC_Address_Table[macAddressIndex].localPortTree = YES;
+						}
+					}
 				}
 				else if (new_job->packet->payload[2] == 'S') {
 					if (localParent == new_job->in_port_index) {
-						localPortTree[new_job->in_port_index] = YES;
+						if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
+						{
+							assign_entry_in_table(MAC_Address_Table, new_job->packet->src, new_job->in_port_index, YES);
+						}
+						else
+						{
+							macAddressIndex = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src);
+							if (MAC_Address_Table[macAddressIndex].localPortTree == NO)
+							{
+								MAC_Address_Table[macAddressIndex].localPortTree = YES;
+							}
+						}
 					}
 					else if (new_job->packet->payload[3] == 'Y') {
-						localPortTree[new_job->in_port_index] = YES;
+						if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
+						{
+							assign_entry_in_table(MAC_Address_Table, new_job->packet->src, new_job->in_port_index, YES);
+						}
+						else
+						{
+							macAddressIndex = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src);
+							if (MAC_Address_Table[macAddressIndex].localPortTree == NO)
+							{
+								MAC_Address_Table[macAddressIndex].localPortTree = YES;
+							}
+						}
 					}
 					else {
-						localPortTree[new_job->in_port_index] = NO;
+						if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
+						{
+							assign_entry_in_table(MAC_Address_Table, new_job->packet->src, new_job->in_port_index, NO);
+						}
+						else
+						{
+							macAddressIndex = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src);
+							if (MAC_Address_Table[macAddressIndex].localPortTree == YES)
+							{
+								MAC_Address_Table[macAddressIndex].localPortTree = NO;
+							}
+						}
+						
 					}
 				}
-
-				printf("Switch: %d\n localParent %d\n local root dest %d\n in port index %d\n", switch_id, localParent, localRootDist, new_job->in_port_index);
+				free(new_job->packet);
+				free(new_job);
 				break;
 
 			case JOB_CONTROL_SEND:
@@ -212,8 +289,8 @@ while(1) {
 				
 				for(int k = 0; k < node_port_num; k++)
 				{
-					
-					if(localParent == k)
+					val = port_to_index(MAC_Address_Table, k);
+					if(localParent == MAC_Address_Table[val].dst)
 					{
 						packet_contents[3] = 'Y';
 					} else {
@@ -234,32 +311,45 @@ while(1) {
 					new_job->packet->length = 4;
 					packet_send(node_port[k], new_job->packet);
 				}
+				free(new_job->packet);
+				free(new_job);
+				break;
+			default:
+				//printf("Switch: %d\n", switch_id);
+				destination_port = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->dst);
+				//printf("destination_port = %d\n", destination_port);
+				if (destination_port == -1)
+				{
+					//printf("localParent = %d == %d = switch id\n", localParent, switch_id);
+					if (localParent != -1 && new_job->in_port_index != check_switch_port_forwarding_table(MAC_Address_Table, localParent))
+					{
+						//printf("wower");
+						destination_port = check_switch_port_forwarding_table(MAC_Address_Table, localParent);
+						packet_send(node_port[destination_port], new_job->packet);
+					}
+					else
+					{	
+						//printf("wow");
+						for (i=0; i<node_port_num; i++)
+						{
+							val = port_to_index(MAC_Address_Table, i);
+							//printf("Switch: %d port %d goes to host %d: %d is %d\n", switch_id, i, MAC_Address_Table[val].dst,  MAC_Address_Table[val].localPortTree, valid_port_in_table(MAC_Address_Table, i) == YES);
+							if (i != new_job->in_port_index && valid_port_in_table(MAC_Address_Table, i) == YES) {
+								packet_send(node_port[i], new_job->packet);
+							}
+						}
+					}
+					
+				}
+				else
+				{
+					//printf("why\n");
+					packet_send(node_port[destination_port], new_job->packet);
+				}
+				free(new_job->packet);
+				free(new_job);
 				break;
 		}
-
-		if (check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->src) == -1)
-		{
-			assign_entry_in_table(MAC_Address_Table, new_job->packet->src, new_job->in_port_index);
-		}
-
-        int destination_port = check_switch_port_forwarding_table(MAC_Address_Table, new_job->packet->dst);
-
-		if (destination_port == -1)
-		{
-            for (i=0; i<node_port_num; i++)
-			{
-				//printf("%d\n",node_port[i]->pipe_send_fd);
-				if (i != new_job->in_port_index) {
-					packet_send(node_port[i], new_job->packet);
-				}
-			}
-		}
-		else
-		{
-			packet_send(node_port[destination_port], new_job->packet);
-		}
-		free(new_job->packet);
-		free(new_job);
 	}
 
 	// Switch sontantly sends out control packets to other switches

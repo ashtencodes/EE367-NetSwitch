@@ -483,7 +483,7 @@ void host_main(int host_id)
 				/* The next three jobs deal with the pinging process */
 				case JOB_PING_SEND_REPLY:
 					/* Send a ping reply packet */
-
+					//printf("recieved ping request\n");
 					/* Create ping reply packet */
 					new_packet = (struct packet *) 
 						malloc(sizeof(struct packet));
