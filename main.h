@@ -47,6 +47,10 @@ struct packet { /* struct for a packet */
 #define PKT_FILE_UPLOAD_START  2
 #define PKT_FILE_UPLOAD_END	   3
 #define PKT_FILE_DOWNLOAD_SEND 4
-#define PKT_SWITCH_CONTROL 5
+#define PKT_SWITCH_CONTROL     5
+#define PKT_DNS_REQUEST        6
+#define PKT_DNS_REPLY          7
+#define PKT_DNS_UPDATE         8
+#define PKT_DNS_UPDATE_REPLY   9
 
 

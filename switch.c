@@ -200,14 +200,14 @@ while(1) {
 						localRootID = new_job->packet->payload[0];
 						localParent = new_job->packet->src;
 						localRootDist = new_job->packet->payload[1] + 1;
-						//printf("Switch: %d\n src %d\n localRootID %d \n localParent %d\n local root dest %d\n in port index %d\n", switch_id, new_job->packet->src, localRootID, localParent, localRootDist, new_job->in_port_index);
+						printf("Switch: %d\n src %d\n localRootID %d \n localParent %d\n local root dest %d\n in port index %d\n", switch_id, new_job->packet->src, localRootID, localParent, localRootDist, new_job->in_port_index);
 					} 
 					else if (new_job->packet->payload[0] == localRootID) {
 						if(new_job->packet->payload[1] + 1 < localRootDist) {
 							//printf("Switch: %d\n src %d\n %d < %d\n", switch_id, new_job->packet->src, new_job->packet->payload[1]+1, localRootDist);
 							localRootDist = new_job->packet->payload[1] + 1;
 							localParent = new_job->packet->src;
-							//printf("Switch: %d\n localRootID %d \n localParent %d\n local root dest %d\n in port index %d\n", switch_id, localRootID, localParent, localRootDist, new_job->in_port_index);
+							printf("Switch: %d\n localRootID %d \n localParent %d\n local root dest %d\n in port index %d\n", switch_id, localRootID, localParent, localRootDist, new_job->in_port_index);
 						}
 					}
 
@@ -333,7 +333,7 @@ while(1) {
 						for (i=0; i<node_port_num; i++)
 						{
 							val = port_to_index(MAC_Address_Table, i);
-							//printf("Switch: %d port %d goes to host %d: %d is %d\n", switch_id, i, MAC_Address_Table[val].dst,  MAC_Address_Table[val].localPortTree, valid_port_in_table(MAC_Address_Table, i) == YES);
+							printf("Switch: %d port %d goes to host %d: %d is %d\n", switch_id, i, MAC_Address_Table[val].dst,  MAC_Address_Table[val].localPortTree, valid_port_in_table(MAC_Address_Table, i) == YES);
 							if (i != new_job->in_port_index && valid_port_in_table(MAC_Address_Table, i) == YES) {
 								packet_send(node_port[i], new_job->packet);
 							}
