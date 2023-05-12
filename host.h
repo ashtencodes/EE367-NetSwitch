@@ -20,7 +20,9 @@ enum host_job_type {
    JOB_REQUEST_ID_SEND,
    JOB_REGISTER_NAME_REC,
    JOB_REQUEST_ID_REC,
-   JOB_REQUEST_ID_REC_END
+   JOB_REQUEST_ID_REC_END,
+   JOB_CONTROL_SEND,
+   JOB_CONTROL_RECV
 };
 
 struct host_job {

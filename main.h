@@ -49,3 +49,4 @@ struct packet { /* struct for a packet */
 #define PKT_DNS_UPLOAD_END 5
 #define PKT_DNS_REQUEST_START 6
 #define PKT_DNS_REQUEST_END 7
+#define PKT_SWITCH_CONTROL 8

@@ -322,6 +322,12 @@ for (k = 0; k < node_port_num; k++) {
 	p = p->next;
 }	
 
+int localRootID = host_id;
+int localRootDist = 0;
+int localParent = - 1;
+
+char packet_contents[3];
+
 /* Initialize the job queue */
 job_q_init(&job_q);
 
@@ -881,6 +887,40 @@ while(1) {
 			job_q_add(&job_q, new_job2);
 			printf("\n\ndownload received\n\n");
 
+			break;
+
+
+
+      case JOB_CONTROL_SEND:
+			//Code to send control packets
+					in_packet = (struct packet *) malloc(sizeof(struct packet));
+					new_job->packet = in_packet;
+
+					packet_contents[0] = localRootID;
+					packet_contents[1] = localRootDist;
+					packet_contents[2] = 'H';
+					
+					for(int k = 0; k < node_port_num; k++)
+					{
+						
+						packet_contents[3] = 'Y';
+
+						new_job->packet->dst 
+							= k;
+						new_job->packet->src = (char) host_id;
+						new_job->packet->type 
+							= PKT_SWITCH_CONTROL;
+
+						for (i=0; i<4; i++) {
+							new_job->packet->payload[i] 
+								= packet_contents[i];
+						}
+						//printf("payload[2] = %c\n", new_job->packet->payload[2]);
+						new_job->packet->length = 4;
+						packet_send(node_port[k], new_job->packet);
+					}
+					free(new_job->packet);
+					free(new_job);
 			break;
 
       case JOB_REGISTER_NAME_SEND:
